@@ -1,0 +1,725 @@
+node ➜ /workspaces/26_frontend/nextjs-ai-sdk-from-scratch/my-ai-app (main) $ pnpm run dev
+
+> my-ai-app@0.1.0 dev /workspaces/26_frontend/nextjs-ai-sdk-from-scratch/my-ai-app
+> next dev --turbopack
+
+   ▲ Next.js 15.5.3 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://172.17.0.2:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 30.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 12.2s
+ GET / 200 in 14530ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 688ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 1570ms
+ ○ Compiling /api/chat ...
+ ✓ Compiled /api/chat in 912ms
+Full request body:  {
+  "id": "IKxn4VsaPX9r7NIj",
+  "messages": [
+    {
+      "parts": [
+        {
+          "type": "text",
+          "text": "hi, my name is ans."
+        }
+      ],
+      "id": "Kp4YeGnShNVIXOPe",
+      "role": "user"
+    }
+  ],
+  "trigger": "submit-message"
+}
+AI event #1:
+ {
+  "type": "start"
+}
+AI event #2:
+ {
+  "type": "start-step",
+  "request": {
+    "body": {
+      "model": "gpt-4o-mini",
+      "input": [
+        {
+          "role": "system",
+          "content": "You are a helpful assistant."
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "hi, my name is ans."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "warnings": []
+}
+AI event #3:
+ {
+  "type": "text-start",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "providerMetadata": {
+    "openai": {
+      "itemId": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc"
+    }
+  }
+}
+AI event #4:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "text": "Hi"
+}
+AI event #5:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "text": " Ans"
+}
+AI event #6:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "text": "!"
+}
+AI event #7:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "text": " How"
+}
+AI event #8:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "text": " can"
+}
+AI event #9:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "text": " I"
+}
+AI event #10:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "text": " assist"
+}
+AI event #11:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "text": " you"
+}
+AI event #12:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "text": " today"
+}
+AI event #13:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc",
+  "text": "?"
+}
+AI event #14:
+ {
+  "type": "text-end",
+  "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc"
+}
+AI event #15:
+ {
+  "type": "finish-step",
+  "finishReason": "stop",
+  "usage": {
+    "inputTokens": 24,
+    "outputTokens": 11,
+    "totalTokens": 35,
+    "reasoningTokens": 0,
+    "cachedInputTokens": 0
+  },
+  "providerMetadata": {
+    "openai": {
+      "responseId": "resp_68d7da72a3748191a065fdfbf4756139042ddd6ea18671bc",
+      "serviceTier": "default"
+    }
+  },
+  "response": {
+    "id": "resp_68d7da72a3748191a065fdfbf4756139042ddd6ea18671bc",
+    "timestamp": "2025-09-27T12:37:07.000Z",
+    "modelId": "gpt-4o-mini-2024-07-18",
+    "headers": {
+      "alt-svc": "h3=\":443\"; ma=86400",
+      "cf-cache-status": "DYNAMIC",
+      "cf-ray": "985b0ce90e624e3b-LHR",
+      "connection": "keep-alive",
+      "content-type": "text/event-stream; charset=utf-8",
+      "date": "Sat, 27 Sep 2025 12:37:07 GMT",
+      "openai-organization": "user-qeguuijcpd9gktxzj3vqc9et",
+      "openai-processing-ms": "1154",
+      "openai-project": "proj_1THxLj0OdbGNGkftcevoaSG4",
+      "openai-version": "2020-10-01",
+      "server": "cloudflare",
+      "set-cookie": "_cfuvid=oF2sWThrgGPv.iwbCcjUfX.x_9GtFqd2YcPxWtl06Ss-1758976627828-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None",
+      "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-content-type-options": "nosniff",
+      "x-envoy-upstream-service-time": "1158",
+      "x-request-id": "req_16bd228fb6521c58d651d98d383c53cf"
+    }
+  }
+}
+AI event #16:
+ {
+  "type": "finish",
+  "finishReason": "stop",
+  "totalUsage": {
+    "inputTokens": 24,
+    "outputTokens": 11,
+    "totalTokens": 35,
+    "reasoningTokens": 0,
+    "cachedInputTokens": 0
+  }
+}
+ POST /api/chat 200 in 4453ms
+Full request body:  {
+  "id": "IKxn4VsaPX9r7NIj",
+  "messages": [
+    {
+      "parts": [
+        {
+          "type": "text",
+          "text": "hi, my name is ans."
+        }
+      ],
+      "id": "Kp4YeGnShNVIXOPe",
+      "role": "user"
+    },
+    {
+      "id": "61j8nCepuWkJPbE6",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Hi Ans! How can I assist you today?",
+          "providerMetadata": {
+            "openai": {
+              "itemId": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc"
+            }
+          },
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "parts": [
+        {
+          "type": "text",
+          "text": "my name?"
+        }
+      ],
+      "id": "xnuLLgm7aHmMVBh8",
+      "role": "user"
+    }
+  ],
+  "trigger": "submit-message"
+}
+AI event #1:
+ {
+  "type": "start"
+}
+AI event #2:
+ {
+  "type": "start-step",
+  "request": {
+    "body": {
+      "model": "gpt-4o-mini",
+      "input": [
+        {
+          "role": "system",
+          "content": "You are a helpful assistant."
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "hi, my name is ans."
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "Hi Ans! How can I assist you today?"
+            }
+          ],
+          "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc"
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "my name?"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "warnings": []
+}
+AI event #3:
+ {
+  "type": "text-start",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "providerMetadata": {
+    "openai": {
+      "itemId": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc"
+    }
+  }
+}
+AI event #4:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": "Your"
+}
+AI event #5:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": " name"
+}
+AI event #6:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": " is"
+}
+AI event #7:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": " Ans"
+}
+AI event #8:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": "!"
+}
+AI event #9:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": " How"
+}
+AI event #10:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": " else"
+}
+AI event #11:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": " can"
+}
+AI event #12:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": " I"
+}
+AI event #13:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": " help"
+}
+AI event #14:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": " you"
+}
+AI event #15:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": " today"
+}
+AI event #16:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc",
+  "text": "?"
+}
+AI event #17:
+ {
+  "type": "text-end",
+  "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc"
+}
+AI event #18:
+ {
+  "type": "finish-step",
+  "finishReason": "stop",
+  "usage": {
+    "inputTokens": 45,
+    "outputTokens": 14,
+    "totalTokens": 59,
+    "reasoningTokens": 0,
+    "cachedInputTokens": 0
+  },
+  "providerMetadata": {
+    "openai": {
+      "responseId": "resp_68d7da7c40bc81918b3c2bba8ef88756042ddd6ea18671bc",
+      "serviceTier": "default"
+    }
+  },
+  "response": {
+    "id": "resp_68d7da7c40bc81918b3c2bba8ef88756042ddd6ea18671bc",
+    "timestamp": "2025-09-27T12:37:16.000Z",
+    "modelId": "gpt-4o-mini-2024-07-18",
+    "headers": {
+      "alt-svc": "h3=\":443\"; ma=86400",
+      "cf-cache-status": "DYNAMIC",
+      "cf-ray": "985b0d282c99ed01-LHR",
+      "connection": "keep-alive",
+      "content-type": "text/event-stream; charset=utf-8",
+      "date": "Sat, 27 Sep 2025 12:37:16 GMT",
+      "openai-organization": "user-qeguuijcpd9gktxzj3vqc9et",
+      "openai-processing-ms": "66",
+      "openai-project": "proj_1THxLj0OdbGNGkftcevoaSG4",
+      "openai-version": "2020-10-01",
+      "server": "cloudflare",
+      "set-cookie": "_cfuvid=I6ZbpDXY3UWkipxeW9WVY8q.y30QwlOfPIRMbFGx73s-1758976636358-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None",
+      "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-content-type-options": "nosniff",
+      "x-envoy-upstream-service-time": "70",
+      "x-request-id": "req_62d52f23e8b583ebffe20287a20e8086"
+    }
+  }
+}
+AI event #19:
+ {
+  "type": "finish",
+  "finishReason": "stop",
+  "totalUsage": {
+    "inputTokens": 45,
+    "outputTokens": 14,
+    "totalTokens": 59,
+    "reasoningTokens": 0,
+    "cachedInputTokens": 0
+  }
+}
+ POST /api/chat 200 in 1586ms
+Full request body:  {
+  "id": "IKxn4VsaPX9r7NIj",
+  "messages": [
+    {
+      "parts": [
+        {
+          "type": "text",
+          "text": "hi, my name is ans."
+        }
+      ],
+      "id": "Kp4YeGnShNVIXOPe",
+      "role": "user"
+    },
+    {
+      "id": "61j8nCepuWkJPbE6",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Hi Ans! How can I assist you today?",
+          "providerMetadata": {
+            "openai": {
+              "itemId": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc"
+            }
+          },
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "parts": [
+        {
+          "type": "text",
+          "text": "my name?"
+        }
+      ],
+      "id": "xnuLLgm7aHmMVBh8",
+      "role": "user"
+    },
+    {
+      "id": "av9xfPGv66GzEYrR",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "step-start"
+        },
+        {
+          "type": "text",
+          "text": "Your name is Ans! How else can I help you today?",
+          "providerMetadata": {
+            "openai": {
+              "itemId": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc"
+            }
+          },
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "parts": [
+        {
+          "type": "text",
+          "text": "3 words for me."
+        }
+      ],
+      "id": "vvhES79HrV4iKo4B",
+      "role": "user"
+    }
+  ],
+  "trigger": "submit-message"
+}
+AI event #1:
+ {
+  "type": "start"
+}
+AI event #2:
+ {
+  "type": "start-step",
+  "request": {
+    "body": {
+      "model": "gpt-4o-mini",
+      "input": [
+        {
+          "role": "system",
+          "content": "You are a helpful assistant."
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "hi, my name is ans."
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "Hi Ans! How can I assist you today?"
+            }
+          ],
+          "id": "msg_68d7da743bc481918c103c5ccfcb33b0042ddd6ea18671bc"
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "my name?"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "output_text",
+              "text": "Your name is Ans! How else can I help you today?"
+            }
+          ],
+          "id": "msg_68d7da7c93088191a87eda58d1288df7042ddd6ea18671bc"
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "3 words for me."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "warnings": []
+}
+AI event #3:
+ {
+  "type": "text-start",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "providerMetadata": {
+    "openai": {
+      "itemId": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc"
+    }
+  }
+}
+AI event #4:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": "Creative"
+}
+AI event #5:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": ","
+}
+AI event #6:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": " curious"
+}
+AI event #7:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": ","
+}
+AI event #8:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": " thoughtful"
+}
+AI event #9:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": "."
+}
+AI event #10:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": " How"
+}
+AI event #11:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": " do"
+}
+AI event #12:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": " those"
+}
+AI event #13:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": " sound"
+}
+AI event #14:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": " to"
+}
+AI event #15:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": " you"
+}
+AI event #16:
+ {
+  "type": "text-delta",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc",
+  "text": "?"
+}
+AI event #17:
+ {
+  "type": "text-end",
+  "id": "msg_68d7da8ba3e4819188958ed8426e606d042ddd6ea18671bc"
+}
+AI event #18:
+ {
+  "type": "finish-step",
+  "finishReason": "stop",
+  "usage": {
+    "inputTokens": 71,
+    "outputTokens": 14,
+    "totalTokens": 85,
+    "reasoningTokens": 0,
+    "cachedInputTokens": 0
+  },
+  "providerMetadata": {
+    "openai": {
+      "responseId": "resp_68d7da8b3510819192d7783459f3eb71042ddd6ea18671bc",
+      "serviceTier": "default"
+    }
+  },
+  "response": {
+    "id": "resp_68d7da8b3510819192d7783459f3eb71042ddd6ea18671bc",
+    "timestamp": "2025-09-27T12:37:31.000Z",
+    "modelId": "gpt-4o-mini-2024-07-18",
+    "headers": {
+      "alt-svc": "h3=\":443\"; ma=86400",
+      "cf-cache-status": "DYNAMIC",
+      "cf-ray": "985b0d835f13cd30-LHR",
+      "connection": "keep-alive",
+      "content-type": "text/event-stream; charset=utf-8",
+      "date": "Sat, 27 Sep 2025 12:37:31 GMT",
+      "openai-organization": "user-qeguuijcpd9gktxzj3vqc9et",
+      "openai-processing-ms": "54",
+      "openai-project": "proj_1THxLj0OdbGNGkftcevoaSG4",
+      "openai-version": "2020-10-01",
+      "server": "cloudflare",
+      "set-cookie": "_cfuvid=R_vr0xTGgbqiUBDTnuc.MrV7nKkTxsGMW9m9I_ZrSY4-1758976651307-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None",
+      "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+      "transfer-encoding": "chunked",
+      "x-content-type-options": "nosniff",
+      "x-envoy-upstream-service-time": "58",
+      "x-request-id": "req_372e5770558a32a1b815ad5ed532538a"
+    }
+  }
+}
+AI event #19:
+ {
+  "type": "finish",
+  "finishReason": "stop",
+  "totalUsage": {
+    "inputTokens": 71,
+    "outputTokens": 14,
+    "totalTokens": 85,
+    "reasoningTokens": 0,
+    "cachedInputTokens": 0
+  }
+}
+ POST /api/chat 200 in 1924ms
