@@ -9,15 +9,37 @@ export const maxDuration = 30;
 
 // this function runs when the browser sends a POST request to /api/chat
 export async function POST(req: Request) {
-  // read the JSON body from the request and pull out the messages array
-  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  // turn the incoming request body into a js object
+  const body = await req.json();
+
+
+  // print the whole body, nice and expanded
+  console.log("Full request body: ", JSON.stringify(body, null, 2));
+
+  // if you just want the messages specifically
+  const { messages }: { messages: UIMessage[] } = body;
+  // console.log("Messages only:", messages);
+
+  // // read the JSON body from the request and pull out the messages array
+  // const { messages }: { messages: UIMessage[] } = await req.json();
 
   // ask the AI for a streaming text response
   const result = streamText({
-    model: openai('gpt-4.1'),      // choose which AI model to use
+    model: openai('gpt-4o-mini'),      // choose which AI model to use
     system: 'You are a helpful assistant.', // give the AI a short instruction
     messages: convertToModelMessages(messages), // convert UI messages to model format
   });
+
+
+
+  // 🔊 print **all** stream events as they arrive (not just text)
+  let i = 0;
+  for await (const event of result.fullStream) {
+    i += 1;
+    console.log(`AI event #${i}:\n`, JSON.stringify(event, null, 2));
+  }
+
 
   // turn the stream into a response the browser understands for live updates
   return result.toUIMessageStreamResponse();
