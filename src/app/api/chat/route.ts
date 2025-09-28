@@ -22,3 +22,4 @@ export async function POST(req: Request) {
   // turn the stream into a response the browser understands for live updates
   return result.toUIMessageStreamResponse();
 }
+
