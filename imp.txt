@@ -1,5 +1,8 @@
 mutable:
-https://chatgpt.com/c/68d8e558-27ac-832d-83e3-e02f26ddefd8
+https://chatgpt.com/c/68d8f4b2-9bc8-832d-98a7-5630261442ef
 
 immutable:
-https://chatgpt.com/share/68d8ebd7-bb58-8009-ba7e-723eec9c8150
+https://chatgpt.com/share/68d8fa85-0464-8009-a43a-99c54f849ad5
+
+code generated here:
+https://chatgpt.com/share/68d8fa9b-a2d4-8009-99e8-854a130352e0
