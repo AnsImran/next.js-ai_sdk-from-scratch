@@ -29,22 +29,48 @@ export default function Page() {
     stop,
     error,
     reload,
-    setMessages, // NEW: direct control over the messages array
-    regenerate,  // NEW: request a fresh take of the last response
+    setMessages,
+    regenerate,
   } = useChat({
     // tell the chat helper how to reach our server API
     transport: new DefaultChatTransport({
-      api: '/api/chat', // this is the server route we’ll hit when we send messages
+      api: '/api/chat', // this is the server route we’ll hit when we send messages OR 'http://localhost:8080/ask_ai_agent/invoke'
     }),
-    // NEW: smooth out UI updates so we re-render at most ~every 50ms while streaming
+    // smooth out UI updates so we re-render at most ~every 50ms while streaming
     // this keeps the UI snappy without re-rendering on every tiny chunk
     experimental_throttle: 50,
+
+    // (Event Callbacks): run code at key points in the chat lifecycle
+    onFinish: ({ message, messages, isAbort, isDisconnect, isError }) => {
+      // fires when the assistant has fully finished responding
+      // good place to sync analytics, update other UI bits, etc.
+      // we keep it minimal here and just log some useful details
+      console.log('assistant finished', {
+        messageId: message.id,
+        totalMessages: messages.length,
+        isAbort,
+        isDisconnect,
+        isError,
+      });
+    },
+    onError: (err) => {
+      // called whenever the fetch/streaming fails
+      // keep logs developer-facing; user-facing copy stays generic below
+      console.error('useChat onError:', err);
+    },
+    onData: (data) => {
+      // called for every data part as it streams in
+      // can be used for custom parsing or side-effects per chunk
+      console.log('useChat onData part:', JSON.stringify(data, null, 2));  // pretty-print with 2 spaces
+      // note: you can cancel processing by throwing here
+      // e.g. if a chunk fails validation: throw new Error('abort stream');
+    },
   });
 
   // input is whatever you’re typing into the text box; setInput updates it
   const [input, setInput] = useState('');
 
-  // NEW: small helper to remove a message by id
+  // small helper to remove a message by id
   // we use the "functional" form of setMessages so we always work with the latest state
   const handleDelete = (id: string) => {
     setMessages(prev => prev.filter(m => m.id !== id));
@@ -64,7 +90,7 @@ export default function Page() {
             // if a part is text, we display the text; if it’s not text, we ignore it here
             part.type === 'text' ? <span key={index}>{part.text}</span> : null,
           )}
-          {/* NEW: a tiny delete button per message so users can prune history */}
+          {/* a tiny delete button per message so users can prune history */}
           <button type="button" onClick={() => handleDelete(message.id)}>
             Delete
           </button>
@@ -84,7 +110,7 @@ export default function Page() {
         </div>
       )}
 
-      {/* NEW: offer a “Regenerate” action once we’re idle, or after an error */}
+      {/* offer a “Regenerate” action once we’re idle, or after an error */}
       {(status === 'ready' || status === 'error') && (
         <div>
           {/* re-ask the model to produce the last assistant message again */}

@@ -1,3 +1,4 @@
+// route.ts
 // this gives us access to OpenAI models by name
 import { openai } from '@ai-sdk/openai';
 // these helpers convert messages into the format the model wants,

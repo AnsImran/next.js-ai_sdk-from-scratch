@@ -1,8 +1,19 @@
 mutable:
-https://chatgpt.com/c/68d8f4b2-9bc8-832d-98a7-5630261442ef
+https://chatgpt.com/c/68da39be-4e80-8331-95b9-7a4e6f3fbf79
 
 immutable:
-https://chatgpt.com/share/68d8fa85-0464-8009-a43a-99c54f849ad5
+https://chatgpt.com/share/68da3fd9-18f0-8009-821e-b49b8db2b7e7
 
 code generated here:
-https://chatgpt.com/share/68d8fa9b-a2d4-8009-99e8-854a130352e0
+https://chatgpt.com/share/68da3ff1-4d5c-8009-855f-c83309c88e28
+
+code generation prompt:
+"""
+the code snippets that are present in context but absent in old-code.
+add those code snippets to the old-code.
+add comments to these new code snippets as well.
+while adding comments follow the rules, conventions and style of commets in the old code.
+keep the comments of old-code intact.
+return the new version of old code, with new code snippets and extra comments for new code snippets.
+the {Event Callbacks} section code are the new code snippets.
+"""
