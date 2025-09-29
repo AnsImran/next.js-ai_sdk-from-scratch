@@ -1,11 +1,13 @@
-mutable:
-https://chatgpt.com/c/68da39be-4e80-8331-95b9-7a4e6f3fbf79
+commit: 1-chatbot-request_configuration
 
-immutable:
-https://chatgpt.com/share/68da3fd9-18f0-8009-821e-b49b8db2b7e7
+mutable: syntax explanantion not required
 
-code generated here:
-https://chatgpt.com/share/68da3ff1-4d5c-8009-855f-c83309c88e28
+
+immutable: syntax explanantion not required
+
+
+code generated here: https://chatgpt.com/share/68da751c-cb8c-8009-83ff-d3a53da5949e
+
 
 code generation prompt:
 """
@@ -15,5 +17,12 @@ add comments to these new code snippets as well.
 while adding comments follow the rules, conventions and style of commets in the old code.
 keep the comments of old-code intact.
 return the new version of old code, with new code snippets and extra comments for new code snippets.
-the {Event Callbacks} section code are the new code snippets.
+before the new code snippets, add // NEW.
+remove // NEW from comments in the old-code.
+important:
+the {Request-Level Configuration (Recommended)} section and onwards are the new code snippets.
+do not add any other new code snippet.
+---
+context
+---
 """

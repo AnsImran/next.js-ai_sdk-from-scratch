@@ -10,8 +10,20 @@ export const maxDuration = 30;
 
 // this function runs when the browser sends a POST request to /api/chat
 export async function POST(req: Request) {
-  // read the JSON body from the request and pull out the messages array
-  const { messages }: { messages: UIMessage[] } = await req.json();
+  // NEW
+  // pull optional custom fields sent at request level (e.g. customKey) alongside messages
+  const { messages, customKey, user_id }: { messages: UIMessage[]; customKey?: string; user_id?: string } = await req.json();
+
+  // optional: you can use customKey (or other body fields) for routing, logging, or controls
+  if (customKey) {
+    // keep logs server-side; do not expose internal details to users
+    console.log('received customKey:', customKey);
+  }
+  if (user_id) {
+    // keep logs server-side; do not expose internal details to users
+    console.log('received customKey:', user_id);
+  }
+
 
   // ask the AI for a streaming text response
   const result = streamText({
@@ -23,4 +35,3 @@ export async function POST(req: Request) {
   // turn the stream into a response the browser understands for live updates
   return result.toUIMessageStreamResponse();
 }
-

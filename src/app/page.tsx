@@ -138,8 +138,32 @@ export default function Page() {
         onSubmit={e => {
           e.preventDefault(); // stop the page from reloading
           if (input.trim()) {
-            // send the text to the server; the helper does the heavy lifting
-            sendMessage({ text: input });
+            // NEW
+            // request-level options: per-send headers/body/metadata override hook defaults
+            // use this to pass auth, knobs like temperature, or custom fields to your API
+            sendMessage(
+              { text: input },
+              {
+                // headers are merged on top of any hook-level headers
+                headers: {
+                  Authorization: 'Bearer token123',        // example bearer token
+                  'X-Custom-Header': 'custom-value',       // any extra header your API expects
+                },
+                // body fields travel alongside the messages for server-side handling
+                body: {
+                  temperature: 0.7,                         // an example model control your API can read
+                  max_tokens: 100,                          // another example control
+                  user_id: '123',                           // an app-level identifier
+                  customKey: 'customValue',                 // example custom field (see route.ts)
+                },
+                // metadata is not sent to the server by the default transport;
+                // it’s available to your app for local bookkeeping/analytics
+                metadata: {
+                  userId: 'user123',
+                  sessionId: 'session456',
+                },
+              },
+            );
             // clear the input box after sending
             setInput('');
           }
