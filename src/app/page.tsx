@@ -34,17 +34,7 @@ export default function Page() {
   } = useChat({
     id: 'my-chat', // stable id so the server can look up and persist history
 
-    // conflict group 1
-    // tell the chat helper how to reach our server API (default payload shape: { messages })
-    // transport: new DefaultChatTransport({
-    //   api: '/api/chat',
-    // }),
-
-    // NEW
-    // customize the transport so we can send a smaller, trigger-aware payload:
-    // - on submit: { trigger: 'submit-user-message', id, message, messageId }
-    // - on regenerate: { trigger: 'regenerate-assistant-message', id, messageId }
-    // the server you integrated already understands both shapes.
+    // tell the chat helper how to reach our server API using a trigger-aware payload
     transport: new DefaultChatTransport({
       api: '/api/chat',
       prepareSendMessagesRequest: ({ id, messages, trigger, messageId }) => {
@@ -66,7 +56,7 @@ export default function Page() {
             },
           };
         }
-        // no special trigger (future-proof): fall back to sending only the newest message
+        // fall back to a compact shape if no special trigger is set
         return {
           body: {
             id,
@@ -112,8 +102,28 @@ export default function Page() {
 
   // small helper to remove a message by id
   // we use the "functional" form of setMessages so we always work with the latest state
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    // NEW
+    // optimistically update the UI first so deletion feels instant
     setMessages(prev => prev.filter(m => m.id !== id));
+
+    // NEW
+    // also tell the server to remove this message from persisted history
+    try {
+      await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trigger: 'delete-message', // server understands this trigger
+          id: 'my-chat',             // must match the chat id used by the hook
+          messageId: id,             // which message to delete
+        }),
+      });
+    } catch (e) {
+      console.error('failed to delete message on server:', e);
+      // optional: rollback UI or show a toast if needed
+      // setMessages(prev => prev); // no-op; add rollback logic if you track a snapshot
+    }
   };
 
   // this is what shows up on the screen

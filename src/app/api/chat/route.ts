@@ -1,88 +1,3 @@
-// // route.ts
-// // this gives us access to OpenAI models by name
-// import { openai } from '@ai-sdk/openai';
-// // these helpers convert messages into the format the model wants,
-// // ask the model for a streaming response, and define the shape of UI messages
-// import { convertToModelMessages, streamText, UIMessage } from 'ai';
-
-// // tell the platform we allow streaming responses to run up to 30 seconds long
-// export const maxDuration = 30;
-
-// // this function runs when the browser sends a POST request to /api/chat
-// export async function POST(req: Request) {
-//   // pull optional custom fields sent at request level (e.g. customKey) alongside messages
-//   const { messages, customKey, user_id }: { messages: UIMessage[]; customKey?: string; user_id?: string } = await req.json();
-
-//   // optional: you can use customKey (or other body fields) for routing, logging, or controls
-//   if (customKey) {
-//     // keep logs server-side; do not expose internal details to users
-//     console.log('received customKey:', customKey);
-//   }
-//   if (user_id) {
-//     // keep logs server-side; do not expose internal details to users
-//     console.log('received customKey:', user_id);
-//   }
-
-//   // ask the AI for a streaming text response
-//   const result = streamText({
-//     model: openai('gpt-4.1'),      // choose which AI model to use
-//     system: 'You are a helpful assistant.', // give the AI a short instruction
-//     messages: convertToModelMessages(messages), // convert UI messages to model format
-//   });
-
-//   // NEW
-//   // attach lightweight metadata at the start and finish so the client can render
-//   // things like timestamps and token usage without extra round-trips
-//   return result.toUIMessageStreamResponse({
-//     messageMetadata: ({ part }) => {
-//       if (part.type === 'start') {
-//         return {
-//           createdAt: Date.now(), // client can show a local time label
-//           model: 'gpt-4.1',      // handy for debugging or analytics
-//         };
-//       }
-//       if (part.type === 'finish') {
-//         return {
-//           totalTokens: part.totalUsage.totalTokens, // let the UI display token count
-//         };
-//       }
-//     },
-//   });
-// }
-
-// /* NEW
-// // alternative server shape if you enable the "Transport Configuration" example
-// // in page.tsx above. it expects { id, message } or trigger-based payloads.
-
-// export async function POST(req: Request) {
-//   const { id, message, trigger, messageId } = await req.json();
-
-//   const chat = await readChat(id);
-//   let messages = chat.messages;
-
-//   if (trigger === 'submit-user-message') {
-//     // handle new user message
-//     messages = [...messages, message];
-//   } else if (trigger === 'regenerate-assistant-message') {
-//     // handle message regeneration - remove messages after messageId
-//     const idx = messages.findIndex(m => m.id === messageId);
-//     if (idx !== -1) {
-//       messages = messages.slice(0, idx);
-//     }
-//   }
-
-//   const result = streamText({
-//     model: openai('gpt-4.1'),
-//     messages: convertToModelMessages(messages),
-//   });
-
-//   return result.toUIMessageStreamResponse();
-// }
-// */
-
-
-
-
 // route.ts
 // this gives us access to OpenAI models by name
 import { openai } from '@ai-sdk/openai';
@@ -112,10 +27,6 @@ export async function POST(req: Request) {
   // grab the raw body once so we can support multiple payload shapes
   const body = await req.json();
 
-  // conflict group 1
-  // pull optional custom fields sent at request level (e.g. customKey) alongside messages
-  // const { messages, customKey, user_id }: { messages: UIMessage[]; customKey?: string; user_id?: string } = await req.json();
-
   // support BOTH shapes:
   // 1) default: { messages, customKey?, user_id? }
   // 2) transport-custom: { id, message? (latest), trigger?, messageId? }
@@ -133,7 +44,7 @@ export async function POST(req: Request) {
     user_id?: string;
     id?: string;
     message?: UIMessage;
-    trigger?: 'submit-user-message' | 'regenerate-assistant-message';
+    trigger?: 'submit-user-message' | 'regenerate-assistant-message' | 'delete-message'; // NEW
     messageId?: string;
   } = body;
 
@@ -145,6 +56,27 @@ export async function POST(req: Request) {
   if (user_id) {
     // keep logs server-side; do not expose internal details to users
     console.log('received user_id:', user_id);
+  }
+
+  // if this is a deletion request, handle it early and return a simple ok
+  if (trigger === 'delete-message') {
+    if (!id || !messageId) {
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Missing id or messageId for delete-message.' }),
+        { status: 400, headers: { 'content-type': 'application/json' } },
+      );
+    }
+
+    const chat = await readChat(id);
+    const next = chat.messages.filter(m => m.id !== messageId);
+
+    await writeChat(id, next);
+
+    // return a small JSON response; the client already updated the UI optimistically
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
   // decide which message list to send to the model
@@ -175,7 +107,7 @@ export async function POST(req: Request) {
         serverMessages = serverMessages.slice(0, idx);
       }
     } else {
-      // if no trigger provided but we do have { id, message }, treat it like submit
+      // if no recognized trigger but we do have { id, message }, treat it like submit
       if (message) {
         serverMessages = [...serverMessages, message];
       }
@@ -193,16 +125,7 @@ export async function POST(req: Request) {
     effectiveMessages = messages;
   }
 
-  // conflict group 1
-  // ask the AI for a streaming text response using ONLY the client-sent messages:
-  // const resultA = streamText({
-  //   model: openai('gpt-4.1'),      // choose which AI model to use
-  //   system: 'You are a helpful assistant.', // give the AI a short instruction
-  //   messages: convertToModelMessages(messages), // convert UI messages to model format
-  // });
-  // return resultA.toUIMessageStreamResponse();
-
-  // unified path: stream using whatever message list we computed above
+  // ask the AI for a streaming text response
   const result = streamText({
     model: openai('gpt-4.1'),                // choose which AI model to use
     system: 'You are a helpful assistant.',  // give the AI a short instruction
@@ -227,4 +150,3 @@ export async function POST(req: Request) {
     },
   });
 }
-
