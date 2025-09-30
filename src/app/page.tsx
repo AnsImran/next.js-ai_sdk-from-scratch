@@ -10,9 +10,14 @@ import { DefaultChatTransport } from 'ai';
 import { useState } from 'react';
 // import Spinner from the barrel file
 import { Spinner } from '../components';
+import { string } from 'zod';
 
 // this defines the page component; Next.js will show this on / (the home page)
 export default function Page() {
+
+  const server_address: string | undefined = '/api/chat';
+
+
   // we ask the chat helper for:
   // - messages: the list of chat bubbles (both you and the AI)
   // - sendMessage: a function to send a new message
@@ -32,11 +37,11 @@ export default function Page() {
     setMessages,
     regenerate,
   } = useChat({
-    id: 'my-chat', // stable id so the server can look up and persist history
+    id: 'my-chat', // stable id so the server can look up and persist history. i guess thread_id
 
     // tell the chat helper how to reach our server API using a trigger-aware payload
     transport: new DefaultChatTransport({
-      api: '/api/chat',
+      api: server_address,
       prepareSendMessagesRequest: ({ id, messages, trigger, messageId }) => {
         if (trigger === 'submit-user-message') {
           return {
@@ -110,7 +115,7 @@ export default function Page() {
     // NEW
     // also tell the server to remove this message from persisted history
     try {
-      await fetch('/api/chat', {
+      await fetch(server_address, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -141,7 +146,8 @@ export default function Page() {
             <span>
               {new Date(message.metadata.createdAt).toLocaleTimeString()} —{' '}
             </span>
-          )}
+          )
+          }
 
           {/* each message can have multiple parts (usually text) */}
           {message.parts.map((part, index) =>

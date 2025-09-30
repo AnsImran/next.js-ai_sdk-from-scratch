@@ -1,12 +1,12 @@
 commit: 1-chatbot-transport_configuration
 
-mutable: 
+mutable: https://chatgpt.com/c/68db9e49-0ec0-8327-80ef-5fd8631c1dd7
 
 
-immutable: 
+immutable: https://chatgpt.com/share/68dbb2bd-a81c-8009-89b2-35abedd6302f
 
 
-code generated here: 
+code generated here: https://chatgpt.com/share/68db9e32-9ae4-8009-92ef-75af34e6a540
 
 
 code generation prompt:

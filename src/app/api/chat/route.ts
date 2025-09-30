@@ -104,7 +104,7 @@ export async function POST(req: Request) {
       }
       const idx = serverMessages.findIndex(m => m.id === messageId);
       if (idx !== -1) {
-        serverMessages = serverMessages.slice(0, idx);
+        serverMessages = serverMessages.slice(0, idx); // Chop off everything from idx onward.
       }
     } else {
       // if no recognized trigger but we do have { id, message }, treat it like submit
