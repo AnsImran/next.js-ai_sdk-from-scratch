@@ -3,7 +3,12 @@
 import { openai } from '@ai-sdk/openai';
 // these helpers convert messages into the format the model wants,
 // ask the model for a streaming response, and define the shape of UI messages
-import { convertToModelMessages, streamText, UIMessage } from 'ai';
+import {
+  convertToModelMessages,
+  streamText,
+  UIMessage,
+  type LanguageModelUsage, // NEW: type only, used for usage metadata
+} from 'ai';
 
 // tell the platform we allow streaming responses to run up to 30 seconds long
 export const maxDuration = 30;
@@ -12,13 +17,27 @@ export const maxDuration = 30;
  * simple in-memory chat store so the trigger-based example can work end-to-end
  * in real apps, swap this with your DB/cache (redis, postgres, etc.)
  */
-const chatStore = new Map<string, UIMessage[]>();
 
-async function readChat(id: string): Promise<{ messages: UIMessage[] }> {
+// NEW
+// optional metadata type to expose usage and some handy fields
+type MyMetadata = {
+  totalUsage?: LanguageModelUsage; // full usage object (tokens, input/output breakdown)
+  totalTokens?: number;            // simple token count for quick display
+  createdAt?: number;              // server timestamp when stream started
+  model?: string;                  // model id for debugging/analytics
+};
+
+// NEW
+// custom UIMessage type carrying our optional metadata
+export type MyUIMessage = UIMessage<MyMetadata>;
+
+const chatStore = new Map<string, MyUIMessage[]>();
+
+async function readChat(id: string): Promise<{ messages: MyUIMessage[] }> {
   return { messages: chatStore.get(id) ?? [] };
 }
 
-async function writeChat(id: string, messages: UIMessage[]): Promise<void> {
+async function writeChat(id: string, messages: MyUIMessage[]): Promise<void> {
   chatStore.set(id, messages);
 }
 
@@ -39,12 +58,12 @@ export async function POST(req: Request) {
     trigger,
     messageId,
   }: {
-    messages?: UIMessage[];
+    messages?: MyUIMessage[];
     customKey?: string;
     user_id?: string;
     id?: string;
-    message?: UIMessage;
-    trigger?: 'submit-user-message' | 'regenerate-assistant-message' | 'delete-message'; // NEW
+    message?: MyUIMessage;
+    trigger?: 'submit-user-message' | 'regenerate-assistant-message' | 'delete-message';
     messageId?: string;
   } = body;
 
@@ -80,7 +99,7 @@ export async function POST(req: Request) {
   }
 
   // decide which message list to send to the model
-  let effectiveMessages: UIMessage[] = [];
+  let effectiveMessages: MyUIMessage[] = [];
 
   if (trigger || (id && !messages)) {
     // transport-based routing path (trigger-aware or { id, message } shape)
@@ -135,6 +154,19 @@ export async function POST(req: Request) {
   // attach lightweight metadata at the start and finish so the client can render
   // things like timestamps and token usage without extra round-trips
   return result.toUIMessageStreamResponse({
+    // NEW
+    // forward a safe error message to the client; fall back to a generic string
+    onError: (error) => {
+      if (error == null) return 'unknown error';
+      if (typeof error === 'string') return error;
+      if (error instanceof Error) return error.message;
+      return JSON.stringify(error);
+    },
+
+    // NEW
+    // pass original messages back for UI libs that use them for reconciliation
+    originalMessages: effectiveMessages,
+
     messageMetadata: ({ part }) => {
       if (part.type === 'start') {
         return {
@@ -143,8 +175,11 @@ export async function POST(req: Request) {
         };
       }
       if (part.type === 'finish') {
+        // NEW
+        // provide both a simple token count and the full usage object
         return {
           totalTokens: part.totalUsage.totalTokens, // let the UI display token count
+          totalUsage: part.totalUsage,              // richer usage details for advanced UIs
         };
       }
     },

@@ -87,6 +87,11 @@ export default function Page() {
         isDisconnect,
         isError,
       });
+
+      // NEW
+      // also log usage metadata if the server attached it
+      // helps track token consumption without extra round-trips
+      console.log('total usage (if provided):', message.metadata?.totalUsage);
     },
     onError: (err) => {
       // called whenever the fetch/streaming fails
@@ -108,11 +113,9 @@ export default function Page() {
   // small helper to remove a message by id
   // we use the "functional" form of setMessages so we always work with the latest state
   const handleDelete = async (id: string) => {
-    // NEW
     // optimistically update the UI first so deletion feels instant
     setMessages(prev => prev.filter(m => m.id !== id));
 
-    // NEW
     // also tell the server to remove this message from persisted history
     try {
       await fetch(server_address, {
@@ -158,6 +161,13 @@ export default function Page() {
           {/* show token usage if the server sent it in metadata */}
           {message.metadata?.totalTokens && (
             <span> ({message.metadata.totalTokens} tokens)</span>
+          )}
+
+          {/* NEW
+              show full usage details if provided by the server
+              useful when the server returns a LanguageModelUsage object */}
+          {message.metadata?.totalUsage?.totalTokens && (
+            <div> Total usage: {message.metadata.totalUsage.totalTokens} tokens</div>
           )}
 
           {/* a tiny delete button per message so users can prune history */}
@@ -255,6 +265,16 @@ export default function Page() {
           Submit
         </button>
       </form>
+
+      {/* NEW
+          optional: example of configuring plain text streaming protocol
+          keep commented unless you want to switch transports */}
+      {/*
+      import { TextStreamChatTransport } from 'ai';
+      const { messages: textMessages } = useChat({
+        transport: new TextStreamChatTransport({ api: server_address }),
+      });
+      */}
     </>
   );
 }
