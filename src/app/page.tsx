@@ -32,10 +32,50 @@ export default function Page() {
     setMessages,
     regenerate,
   } = useChat({
-    // tell the chat helper how to reach our server API
+    id: 'my-chat', // stable id so the server can look up and persist history
+
+    // conflict group 1
+    // tell the chat helper how to reach our server API (default payload shape: { messages })
+    // transport: new DefaultChatTransport({
+    //   api: '/api/chat',
+    // }),
+
+    // NEW
+    // customize the transport so we can send a smaller, trigger-aware payload:
+    // - on submit: { trigger: 'submit-user-message', id, message, messageId }
+    // - on regenerate: { trigger: 'regenerate-assistant-message', id, messageId }
+    // the server you integrated already understands both shapes.
     transport: new DefaultChatTransport({
-      api: '/api/chat', // this is the server route we’ll hit when we send messages OR 'http://localhost:8080/ask_ai_agent/invoke'
+      api: '/api/chat',
+      prepareSendMessagesRequest: ({ id, messages, trigger, messageId }) => {
+        if (trigger === 'submit-user-message') {
+          return {
+            body: {
+              trigger: 'submit-user-message',
+              id,
+              message: messages[messages.length - 1], // send only the newest message
+              messageId,
+            },
+          };
+        } else if (trigger === 'regenerate-assistant-message') {
+          return {
+            body: {
+              trigger: 'regenerate-assistant-message',
+              id,
+              messageId,
+            },
+          };
+        }
+        // no special trigger (future-proof): fall back to sending only the newest message
+        return {
+          body: {
+            id,
+            message: messages[messages.length - 1],
+          },
+        };
+      },
     }),
+
     // smooth out UI updates so we re-render at most ~every 50ms while streaming
     // this keeps the UI snappy without re-rendering on every tiny chunk
     experimental_throttle: 50,
@@ -85,11 +125,25 @@ export default function Page() {
         <div key={message.id}>
           {/* show who spoke: if role is 'user', label it “User:”, else label it “AI:” */}
           {message.role === 'user' ? 'User: ' : 'AI: '}
+
+          {/* optionally show when the message started, if the server attached metadata */}
+          {message.metadata?.createdAt && (
+            <span>
+              {new Date(message.metadata.createdAt).toLocaleTimeString()} —{' '}
+            </span>
+          )}
+
           {/* each message can have multiple parts (usually text) */}
           {message.parts.map((part, index) =>
             // if a part is text, we display the text; if it’s not text, we ignore it here
             part.type === 'text' ? <span key={index}>{part.text}</span> : null,
           )}
+
+          {/* show token usage if the server sent it in metadata */}
+          {message.metadata?.totalTokens && (
+            <span> ({message.metadata.totalTokens} tokens)</span>
+          )}
+
           {/* a tiny delete button per message so users can prune history */}
           <button type="button" onClick={() => handleDelete(message.id)}>
             Delete
@@ -138,7 +192,6 @@ export default function Page() {
         onSubmit={e => {
           e.preventDefault(); // stop the page from reloading
           if (input.trim()) {
-            // NEW
             // request-level options: per-send headers/body/metadata override hook defaults
             // use this to pass auth, knobs like temperature, or custom fields to your API
             sendMessage(
@@ -154,7 +207,7 @@ export default function Page() {
                   temperature: 0.7,                         // an example model control your API can read
                   max_tokens: 100,                          // another example control
                   user_id: '123',                           // an app-level identifier
-                  customKey: 'customValue',                 // example custom field (see route.ts)
+                  customKey: 'customValue',                 // example custom field (server logs it)
                 },
                 // metadata is not sent to the server by the default transport;
                 // it’s available to your app for local bookkeeping/analytics
