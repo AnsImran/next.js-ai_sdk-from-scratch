@@ -42,22 +42,36 @@ export default function Page() {
     // tell the chat helper how to reach our server API using a trigger-aware payload
     transport: new DefaultChatTransport({
       api: server_address,
-      prepareSendMessagesRequest: ({ id, messages, trigger, messageId }) => {
-        if (trigger === 'submit-user-message') {
+      prepareSendMessagesRequest: ({ id, messages, trigger}) => {
+      // prepareSendMessagesRequest: (args) => {
+      //   const { id, messages, trigger} = args;
+      //   console.log('prepareSendMessagesRequest trigger:', trigger, 'messageId:', messageId);
+        const lastMessage = messages[messages.length - 1];
+        const messageId = lastMessage?.id;
+
+        if (trigger === 'submit-message') {
           return {
+            headers: {
+              Authorization: 'Bearer token123',        // example bearer token
+              'X-Custom-Header': 'custom-value',       // any extra header your API expects
+            },
             body: {
-              trigger: 'submit-user-message',
+              trigger: 'submit-message',
               id,
               message: messages[messages.length - 1], // send only the newest message
               messageId,
+              user_id: '123',                           // an app-level identifier
+              customKey: 'customValue',                 // example custom field (server logs it)
+              route: 'submit-message'
             },
           };
-        } else if (trigger === 'regenerate-assistant-message') {
+        } else if (trigger === 'regenerate-message') {
           return {
             body: {
-              trigger: 'regenerate-assistant-message',
+              trigger: 'regenerate-message',
               id,
               messageId,
+              route: 'regenerate-message'
             },
           };
         }
@@ -66,6 +80,9 @@ export default function Page() {
           body: {
             id,
             message: messages[messages.length - 1],
+            user_id: '123',                           // an app-level identifier
+            customKey: 'customValue',                 // example custom field (server logs it)
+            route: 'fallback',
           },
         };
       },
@@ -122,6 +139,7 @@ export default function Page() {
           trigger: 'delete-message', // server understands this trigger
           id: 'my-chat',             // must match the chat id used by the hook
           messageId: id,             // which message to delete
+          route: 'delete-message',
         }),
       });
     } catch (e) {
@@ -212,26 +230,26 @@ export default function Page() {
             // use this to pass auth, knobs like temperature, or custom fields to your API
             sendMessage(
               { text: input },
-              {
-                // headers are merged on top of any hook-level headers
-                headers: {
-                  Authorization: 'Bearer token123',        // example bearer token
-                  'X-Custom-Header': 'custom-value',       // any extra header your API expects
-                },
-                // body fields travel alongside the messages for server-side handling
-                body: {
-                  temperature: 0.7,                         // an example model control your API can read
-                  max_tokens: 100,                          // another example control
-                  user_id: '123',                           // an app-level identifier
-                  customKey: 'customValue',                 // example custom field (server logs it)
-                },
-                // metadata is not sent to the server by the default transport;
-                // it’s available to your app for local bookkeeping/analytics
-                metadata: {
-                  userId: 'user123',
-                  sessionId: 'session456',
-                },
-              },
+              // {
+              //   // headers are merged on top of any hook-level headers
+              //   headers: {
+              //     Authorization: 'Bearer token123',        // example bearer token
+              //     'X-Custom-Header': 'custom-value',       // any extra header your API expects
+              //   },
+              //   // body fields travel alongside the messages for server-side handling
+              //   body: {
+              //     temperature: 0.7,                         // an example model control your API can read
+              //     max_tokens: 100,                          // another example control
+              //     user_id: '123',                           // an app-level identifier
+              //     customKey: 'customValue',                 // example custom field (server logs it)
+              //   },
+              //   // metadata is not sent to the server by the default transport;
+              //   // it’s available to your app for local bookkeeping/analytics
+              //   metadata: {
+              //     userId: 'user123',
+              //     sessionId: 'session456',
+              //   },
+              // },
             );
             // clear the input box after sending
             setInput('');
