@@ -1,4 +1,10 @@
-commit: 1-chatbot-controlling_the_response_stream
+IMPORTANT!!!
+the original code generated had some issues from some previous commits.
+i have fixed the previous commits.
+the code in page.tsx and route.tsx is also fixed!
+however, the code in the `code generated here` is not fixed yet. it's still the old code with probs inside.
+
+commit: 1-chatbot-controlling_the_response_stream:latest
 
 mutable: explanation in code generated link | https://chatgpt.com/share/68dc14e9-18e8-8009-83c3-c8e85d6fe0be
 
@@ -7,6 +13,7 @@ immutable: explanation in code generated link | https://chatgpt.com/share/68dc14
 
 
 code generated here: https://chatgpt.com/c/68dbcfd8-f51c-832e-8c94-0f25de708d86
+
 
 
 code generation prompt:

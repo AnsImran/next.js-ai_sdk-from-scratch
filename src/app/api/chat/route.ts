@@ -57,14 +57,16 @@ export async function POST(req: Request) {
     message,
     trigger,
     messageId,
+    route
   }: {
     messages?: MyUIMessage[];
     customKey?: string;
     user_id?: string;
     id?: string;
     message?: MyUIMessage;
-    trigger?: 'submit-user-message' | 'regenerate-assistant-message' | 'delete-message';
+    trigger?: 'submit-message' | 'regenerate-message' | 'delete-message';
     messageId?: string;
+    route?: string;
   } = body;
 
   // optional: you can use customKey (or other body fields) for routing, logging, or controls
@@ -75,6 +77,14 @@ export async function POST(req: Request) {
   if (user_id) {
     // keep logs server-side; do not expose internal details to users
     console.log('received user_id:', user_id);
+  }
+  if (route) {
+    // keep logs server-side; do not expose internal details to users
+    console.log('route: ', route);
+  }
+  if (trigger) {
+    // keep logs server-side; do not expose internal details to users
+    console.log('trigger: ', trigger);
   }
 
   // if this is a deletion request, handle it early and return a simple ok
@@ -110,16 +120,16 @@ export async function POST(req: Request) {
     const chat = await readChat(id);
     let serverMessages = chat.messages;
 
-    if (trigger === 'submit-user-message') {
+    if (trigger === 'submit-message') {
       // append the newest user message coming from the client
       if (!message) {
-        throw new Error('Missing "message" for submit-user-message trigger.');
+        throw new Error('Missing "message" for submit-message trigger.');
       }
       serverMessages = [...serverMessages, message];
-    } else if (trigger === 'regenerate-assistant-message') {
+    } else if (trigger === 'regenerate-message') {
       // roll back to just before the target messageId (usually the assistant message)
       if (!messageId) {
-        throw new Error('Missing "messageId" for regenerate-assistant-message trigger.');
+        throw new Error('Missing "messageId" for regenerate-message trigger.');
       }
       const idx = serverMessages.findIndex(m => m.id === messageId);
       if (idx !== -1) {
