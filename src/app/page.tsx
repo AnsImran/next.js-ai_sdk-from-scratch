@@ -1,22 +1,26 @@
-// page.tsx
 // 'use client' tells Next.js this file runs in the browser, not only on the server
 'use client';
 
 // we import a ready-made chat helper that handles common chat chores for us
 import { useChat } from '@ai-sdk/react';
 // this sets up how we talk to our server (which URL to send messages to, etc.)
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, UIMessage, UIDataTypes } from 'ai';
 // a small tool from React so the page can remember your current input
 import { useState } from 'react';
 // import Spinner from the barrel file
 import { Spinner } from '../components';
-import { string } from 'zod';
+
+// NEW
+// import the shared tools type so UI messages know the tools’ input/output shapes
+import type { AppUITools } from '@/lib/ai-tools';
+
+// NEW
+// build a UIMessage type that carries our tool typings end-to-end on the client
+type MyUIMessage = UIMessage<never, UIDataTypes, AppUITools>;
 
 // this defines the page component; Next.js will show this on / (the home page)
 export default function Page() {
-
   const server_address: string | undefined = '/api/chat';
-
 
   // we ask the chat helper for:
   // - messages: the list of chat bubbles (both you and the AI)
@@ -36,7 +40,7 @@ export default function Page() {
     reload,
     setMessages,
     regenerate,
-  } = useChat({
+  } = useChat<MyUIMessage>({
     id: 'my-chat', // stable id so the server can look up and persist history. i guess thread_id
 
     // tell the chat helper how to reach our server API using a trigger-aware payload
@@ -105,7 +109,6 @@ export default function Page() {
         isError,
       });
 
-      // NEW
       // also log usage metadata if the server attached it
       // helps track token consumption without extra round-trips
       console.log('total usage (if provided):', message.metadata?.totalUsage);
@@ -180,8 +183,7 @@ export default function Page() {
             <span> ({message.metadata.totalTokens} tokens)</span>
           )}
 
-          {/* NEW
-              show full usage details if provided by the server
+          {/* show full usage details if provided by the server
               useful when the server returns a LanguageModelUsage object */}
           {message.metadata?.totalUsage?.totalTokens && (
             <div> Total usage: {message.metadata.totalUsage.totalTokens} tokens</div>
@@ -239,26 +241,6 @@ export default function Page() {
             // use this to pass auth, knobs like temperature, or custom fields to your API
             sendMessage(
               { text: input },
-              // {
-              //   // headers are merged on top of any hook-level headers
-              //   headers: {
-              //     Authorization: 'Bearer token123',        // example bearer token
-              //     'X-Custom-Header': 'custom-value',       // any extra header your API expects
-              //   },
-              //   // body fields travel alongside the messages for server-side handling
-              //   body: {
-              //     temperature: 0.7,                         // an example model control your API can read
-              //     max_tokens: 100,                          // another example control
-              //     user_id: '123',                           // an app-level identifier
-              //     customKey: 'customValue',                 // example custom field (server logs it)
-              //   },
-              //   // metadata is not sent to the server by the default transport;
-              //   // it’s available to your app for local bookkeeping/analytics
-              //   metadata: {
-              //     userId: 'user123',
-              //     sessionId: 'session456',
-              //   },
-              // },
             );
             // clear the input box after sending
             setInput('');
@@ -282,16 +264,6 @@ export default function Page() {
           Submit
         </button>
       </form>
-
-      {/* NEW
-          optional: example of configuring plain text streaming protocol
-          keep commented unless you want to switch transports */}
-      {/*
-      import { TextStreamChatTransport } from 'ai';
-      const { messages: textMessages } = useChat({
-        transport: new TextStreamChatTransport({ api: server_address }),
-      });
-      */}
     </>
   );
 }

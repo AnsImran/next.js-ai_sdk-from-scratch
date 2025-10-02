@@ -1,4 +1,3 @@
-// route.ts
 // this gives us access to OpenAI models by name
 import { openai } from '@ai-sdk/openai';
 // these helpers convert messages into the format the model wants,
@@ -7,8 +6,13 @@ import {
   convertToModelMessages,
   streamText,
   UIMessage,
-  type LanguageModelUsage, // NEW: type only, used for usage metadata
+  type LanguageModelUsage,
+  UIDataTypes, // used below to attach tool-typing to UI messages
 } from 'ai';
+
+// NEW
+// import the shared tools type (you can also import `tools` when you start wiring tool calls)
+import type { AppUITools } from '@/lib/ai-tools';
 
 // tell the platform we allow streaming responses to run up to 30 seconds long
 export const maxDuration = 30;
@@ -18,7 +22,6 @@ export const maxDuration = 30;
  * in real apps, swap this with your DB/cache (redis, postgres, etc.)
  */
 
-// NEW
 // optional metadata type to expose usage and some handy fields
 type MyMetadata = {
   totalUsage?: LanguageModelUsage; // full usage object (tokens, input/output breakdown)
@@ -28,8 +31,8 @@ type MyMetadata = {
 };
 
 // NEW
-// custom UIMessage type carrying our optional metadata
-export type MyUIMessage = UIMessage<MyMetadata>;
+// make server-side UI messages tools-aware so inputs/outputs are typed end-to-end
+export type MyUIMessage = UIMessage<MyMetadata, UIDataTypes, AppUITools>;
 
 const chatStore = new Map<string, MyUIMessage[]>();
 
@@ -164,7 +167,6 @@ export async function POST(req: Request) {
   // attach lightweight metadata at the start and finish so the client can render
   // things like timestamps and token usage without extra round-trips
   return result.toUIMessageStreamResponse({
-    // NEW
     // forward a safe error message to the client; fall back to a generic string
     onError: (error) => {
       if (error == null) return 'unknown error';
@@ -173,7 +175,6 @@ export async function POST(req: Request) {
       return JSON.stringify(error);
     },
 
-    // NEW
     // pass original messages back for UI libs that use them for reconciliation
     originalMessages: effectiveMessages,
 
@@ -185,7 +186,6 @@ export async function POST(req: Request) {
         };
       }
       if (part.type === 'finish') {
-        // NEW
         // provide both a simple token count and the full usage object
         return {
           totalTokens: part.totalUsage.totalTokens, // let the UI display token count
