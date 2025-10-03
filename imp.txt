@@ -1,12 +1,12 @@
-commit: 1-chatbot-Type_Inference_for_Tools
+commit: 2-chatbot_message_persistence x without code
 
-mutable: explanation in code generated link | https://chatgpt.com/share/68de3ab0-9138-8009-9daa-7b877565466d
-
-
-immutable: explanation in code generated link | https://chatgpt.com/share/68de3ab0-9138-8009-9daa-7b877565466d
+mutable: explanation in code generated link | https://chatgpt.com/c/68de8636-69b8-8328-86cc-d99e098ff1d7
 
 
-code generated here: https://chatgpt.com/share/68de3ab0-9138-8009-9daa-7b877565466d
+immutable: explanation in code generated link | https://chatgpt.com/c/68de8636-69b8-8328-86cc-d99e098ff1d7
+
+
+code generated here: https://chatgpt.com/c/68de8636-69b8-8328-86cc-d99e098ff1d7
 
 
 
@@ -21,112 +21,412 @@ before the new code snippets, add // NEW.
 remove // NEW from comments in the old-code.
 important:
 the {Type_Inference_for_Tools} section and onwards are the new code snippets.
+in case of {Setting Up Server-side ID Generation} go for option-1 (Using generateMessageId in toUIMessageStreamResponse).
+in case of {Validating messages on the server}-{Validation with tools} use the tools src/lib/ai-tools.ts.
+note: there is already a ChatStore on the backend, feel free to remove it and the code related to it. and replace with the new
+chat persistence code.
 ---
 new code snippets along with explanations:
 ---
-## Type Inference for Tools
+# Chatbot Message Persistence
 
-When working with tools in TypeScript, AI SDK UI provides type inference helpers to ensure type safety for your tool inputs and outputs.
+Being able to store and load chat messages is crucial for most AI chatbots.
+In this guide, we'll show how to implement message persistence with `useChat` and `streamText`.
 
-### InferUITool
+<Note>
+  This guide does not cover authorization, error handling, or other real-world
+  considerations. It is intended to be a simple example of how to implement
+  message persistence.
+</Note>
 
-The `InferUITool` type helper infers the input and output types of a single tool for use in UI messages:
+## Starting a new chat
 
-```tsx
-import { InferUITool } from 'ai';
+When the user navigates to the chat page without providing a chat ID,
+we need to create a new chat and redirect to the chat page with the new chat ID.
+
+```tsx filename="app/chat/page.tsx"
+import { redirect } from 'next/navigation';
+import { createChat } from '@util/chat-store';
+
+export default async function Page() {
+  const id = await createChat(); // create a new chat
+  redirect(`/chat/${id}`); // redirect to chat page, see below
+}
+```
+
+Our example chat store implementation uses files to store the chat messages.
+In a real-world application, you would use a database or a cloud storage service,
+and get the chat ID from the database.
+That being said, the function interfaces are designed to be easily replaced with other implementations.
+
+```tsx filename="util/chat-store.ts"
+import { generateId } from 'ai';
+import { existsSync, mkdirSync } from 'fs';
+import { writeFile } from 'fs/promises';
+import path from 'path';
+
+export async function createChat(): Promise<string> {
+  const id = generateId(); // generate a unique chat ID
+  await writeFile(getChatFile(id), '[]'); // create an empty chat file
+  return id;
+}
+
+function getChatFile(id: string): string {
+  const chatDir = path.join(process.cwd(), '.chats');
+  if (!existsSync(chatDir)) mkdirSync(chatDir, { recursive: true });
+  return path.join(chatDir, `${id}.json`);
+}
+```
+
+## Loading an existing chat
+
+When the user navigates to the chat page with a chat ID, we need to load the chat messages from storage.
+
+The `loadChat` function in our file-based chat store is implemented as follows:
+
+```tsx filename="util/chat-store.ts"
+import { UIMessage } from 'ai';
+import { readFile } from 'fs/promises';
+
+export async function loadChat(id: string): Promise<UIMessage[]> {
+  return JSON.parse(await readFile(getChatFile(id), 'utf8'));
+}
+
+// ... rest of the file
+```
+
+## Validating messages on the server
+
+When processing messages on the server that contain tool calls, custom metadata, or data parts, you should validate them using `validateUIMessages` before sending them to the model.
+
+### Validation with tools
+
+When your messages include tool calls, validate them against your tool definitions:
+
+```tsx filename="app/api/chat/route.ts" highlight="7-25,32-37"
+import {
+  convertToModelMessages,
+  streamText,
+  UIMessage,
+  validateUIMessages,
+  tool,
+} from 'ai';
 import { z } from 'zod';
+import { loadChat, saveChat } from '@util/chat-store';
+import { openai } from '@ai-sdk/openai';
+import { dataPartsSchema, metadataSchema } from '@util/schemas';
 
-const weatherTool = {
-  description: 'Get the current weather',
-  inputSchema: z.object({
-    location: z.string().describe('The city and state'),
+// Define your tools
+const tools = {
+  weather: tool({
+    description: 'Get weather information',
+    parameters: z.object({
+      location: z.string(),
+      units: z.enum(['celsius', 'fahrenheit']),
+    }),
+    execute: async ({ location, units }) => {
+      /* tool implementation */
+    },
   }),
-  execute: async ({ location }) => {
-    return `The weather in ${location} is sunny.`;
-  },
+  // other tools
 };
 
-// Infer the types from the tool
-type WeatherUITool = InferUITool<typeof weatherTool>;
-// This creates a type with:
-// {
-//   input: { location: string };
-//   output: string;
-// }
-```
+export async function POST(req: Request) {
+  const { message, id } = await req.json();
 
-### InferUITools
+  // Load previous messages from database
+  const previousMessages = await loadChat(id);
 
-The `InferUITools` type helper infers the input and output types of a `ToolSet`:
+  // Append new message to previousMessages messages
+  const messages = [...previousMessages, message];
 
-```tsx
-import { InferUITools, ToolSet } from 'ai';
-import { z } from 'zod';
+  // Validate loaded messages against
+  // tools, data parts schema, and metadata schema
+  const validatedMessages = await validateUIMessages({
+    messages,
+    tools, // Ensures tool calls in messages match current schemas
+    dataPartsSchema,
+    metadataSchema,
+  });
 
-const tools = {
-  weather: {
-    description: 'Get the current weather',
-    inputSchema: z.object({
-      location: z.string().describe('The city and state'),
-    }),
-    execute: async ({ location }) => {
-      return `The weather in ${location} is sunny.`;
+  const result = streamText({
+    model: openai('gpt-4o-mini'),
+    messages: convertToModelMessages(validatedMessages),
+    tools,
+  });
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    onFinish: ({ messages }) => {
+      saveChat({ chatId: id, messages });
     },
-  },
-  calculator: {
-    description: 'Perform basic arithmetic',
-    inputSchema: z.object({
-      operation: z.enum(['add', 'subtract', 'multiply', 'divide']),
-      a: z.number(),
-      b: z.number(),
-    }),
-    execute: async ({ operation, a, b }) => {
-      switch (operation) {
-        case 'add':
-          return a + b;
-        case 'subtract':
-          return a - b;
-        case 'multiply':
-          return a * b;
-        case 'divide':
-          return a / b;
-      }
+  });
+}
+```
+
+### Handling validation errors
+
+Handle validation errors gracefully when messages from the database don't match current schemas:
+
+```tsx filename="app/api/chat/route.ts" highlight="3,10-24"
+import {
+  convertToModelMessages,
+  streamText,
+  validateUIMessages,
+  TypeValidationError,
+} from 'ai';
+import { type MyUIMessage } from '@/types';
+
+export async function POST(req: Request) {
+  const { message, id } = await req.json();
+
+  // Load and validate messages from database
+  let validatedMessages: MyUIMessage[];
+
+  try {
+    const previousMessages = await loadMessagesFromDB(id);
+    validatedMessages = await validateUIMessages({
+      // append the new message to the previous messages:
+      messages: [...previousMessages, message],
+      tools,
+      metadataSchema,
+    });
+  } catch (error) {
+    if (error instanceof TypeValidationError) {
+      // Log validation error for monitoring
+      console.error('Database messages validation failed:', error);
+      // Could implement message migration or filtering here
+      // For now, start with empty history
+      validatedMessages = [];
+    } else {
+      throw error;
+    }
+  }
+
+  // Continue with validated messages...
+}
+```
+
+
+
+## Storing messages
+
+`useChat` sends the chat id and the messages to the backend.
+
+<Note>
+  The `useChat` message format is different from the `ModelMessage` format. The
+  `useChat` message format is designed for frontend display, and contains
+  additional fields such as `id` and `createdAt`. We recommend storing the
+  messages in the `useChat` message format.
+
+When loading messages from storage that contain tools, metadata, or custom data
+parts, validate them using `validateUIMessages` before processing (see the
+[validation section](#validating-messages-from-database) above).
+
+</Note>
+
+Storing messages is done in the `onFinish` callback of the `toUIMessageStreamResponse` function.
+`onFinish` receives the complete messages including the new AI response as `UIMessage[]`.
+
+```tsx filename="app/api/chat/route.ts" highlight="6,11-17"
+import { openai } from '@ai-sdk/openai';
+import { saveChat } from '@util/chat-store';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+
+export async function POST(req: Request) {
+  const { messages, chatId }: { messages: UIMessage[]; chatId: string } =
+    await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o-mini'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    onFinish: ({ messages }) => {
+      saveChat({ chatId, messages });
     },
-  },
-} satisfies ToolSet;
-
-// Infer the types from the tool set
-type MyUITools = InferUITools<typeof tools>;
-// This creates a type with:
-// {
-//   weather: { input: { location: string }; output: string };
-//   calculator: { input: { operation: 'add' | 'subtract' | 'multiply' | 'divide'; a: number; b: number }; output: number };
-// }
+  });
+}
 ```
 
-### Using Inferred Types
+The actual storage of the messages is done in the `saveChat` function, which in
+our file-based chat store is implemented as follows:
 
-You can use these inferred types to create a custom UIMessage type and pass it to various AI SDK UI functions:
+```tsx filename="util/chat-store.ts"
+import { UIMessage } from 'ai';
+import { writeFile } from 'fs/promises';
 
-```tsx
-import { InferUITools, UIMessage, UIDataTypes } from 'ai';
+export async function saveChat({
+  chatId,
+  messages,
+}: {
+  chatId: string;
+  messages: UIMessage[];
+}): Promise<void> {
+  const content = JSON.stringify(messages, null, 2);
+  await writeFile(getChatFile(chatId), content);
+}
 
-type MyUITools = InferUITools<typeof tools>;
-type MyUIMessage = UIMessage<never, UIDataTypes, MyUITools>;
+// ... rest of the file
 ```
 
-Pass the custom type to `useChat` or `createUIMessageStream`:
+## Message IDs
 
-```tsx
+In addition to a chat ID, each message has an ID.
+You can use this message ID to e.g. manipulate individual messages.
+
+### Client-side vs Server-side ID Generation
+
+By default, message IDs are generated client-side:
+
+- User message IDs are generated by the `useChat` hook on the client
+- AI response message IDs are generated by `streamText` on the server
+
+For applications without persistence, client-side ID generation works perfectly.
+However, **for persistence, you need server-side generated IDs** to ensure consistency across sessions and prevent ID conflicts when messages are stored and retrieved.
+
+### Setting Up Server-side ID Generation
+
+When implementing persistence, you have two options for generating server-side IDs:
+
+1. **Using `generateMessageId` in `toUIMessageStreamResponse`**
+2. **Setting IDs in your start message part with `createUIMessageStream`**
+
+#### Option 1: Using `generateMessageId` in `toUIMessageStreamResponse`
+
+You can control the ID format by providing ID generators using [`createIdGenerator()`](/docs/reference/ai-sdk-core/create-id-generator):
+
+```tsx filename="app/api/chat/route.ts" highlight="7-11"
+import { createIdGenerator, streamText } from 'ai';
+
+export async function POST(req: Request) {
+  // ...
+  const result = streamText({
+    // ...
+  });
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    // Generate consistent server-side IDs for persistence:
+    generateMessageId: createIdGenerator({
+      prefix: 'msg',
+      size: 16,
+    }),
+    onFinish: ({ messages }) => {
+      saveChat({ chatId, messages });
+    },
+  });
+}
+```
+
+#### Option 2: Setting IDs with `createUIMessageStream`
+
+Alternatively, you can use `createUIMessageStream` to control the message ID by writing a start message part:
+
+```tsx filename="app/api/chat/route.ts" highlight="8-18"
+import {
+  generateId,
+  streamText,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+} from 'ai';
+
+export async function POST(req: Request) {
+  const { messages, chatId } = await req.json();
+
+  const stream = createUIMessageStream({
+    execute: ({ writer }) => {
+      // Write start message part with custom ID
+      writer.write({
+        type: 'start',
+        messageId: generateId(), // Generate server-side ID for persistence
+      });
+
+      const result = streamText({
+        model: openai('gpt-4o-mini'),
+        messages: convertToModelMessages(messages),
+      });
+
+      writer.merge(result.toUIMessageStream({ sendStart: false })); // omit start message part
+    },
+    originalMessages: messages,
+    onFinish: ({ responseMessage }) => {
+      // save your chat here
+    },
+  });
+
+  return createUIMessageStreamResponse({ stream });
+}
+```
+
+<Note>
+  For client-side applications that don't require persistence, you can still customize client-side ID generation:
+
+```tsx filename="ui/chat.tsx"
+import { createIdGenerator } from 'ai';
 import { useChat } from '@ai-sdk/react';
-import { createUIMessageStream } from 'ai';
-import type { MyUIMessage } from './types';
 
-// With useChat
-const { messages } = useChat<MyUIMessage>();
-
-// With createUIMessageStream
-const stream = createUIMessageStream<MyUIMessage>(/* ... */);
+const { ... } = useChat({
+  generateId: createIdGenerator({
+    prefix: 'msgc',
+    size: 16,
+  }),
+  // ...
+});
 ```
 
-This provides full type safety for tool inputs and outputs on the client and server.
+</Note>
+
+
+
+## Handling client disconnects
+
+By default, the AI SDK `streamText` function uses backpressure to the language model provider to prevent
+the consumption of tokens that are not yet requested.
+
+However, this means that when the client disconnects, e.g. by closing the browser tab or because of a network issue,
+the stream from the LLM will be aborted and the conversation may end up in a broken state.
+
+Assuming that you have a [storage solution](#storing-messages) in place, you can use the `consumeStream` method to consume the stream on the backend,
+and then save the result as usual.
+`consumeStream` effectively removes the backpressure,
+meaning that the result is stored even when the client has already disconnected.
+
+```tsx filename="app/api/chat/route.ts" highlight="19-21"
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+import { saveChat } from '@util/chat-store';
+
+export async function POST(req: Request) {
+  const { messages, chatId }: { messages: UIMessage[]; chatId: string } =
+    await req.json();
+
+  const result = streamText({
+    model,
+    messages: convertToModelMessages(messages),
+  });
+
+  // consume the stream to ensure it runs to completion & triggers onFinish
+  // even when the client response is aborted:
+  result.consumeStream(); // no await
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    onFinish: ({ messages }) => {
+      saveChat({ chatId, messages });
+    },
+  });
+}
+```
+
+When the client reloads the page after a disconnect, the chat will be restored from the storage solution.
+
+<Note>
+  In production applications, you would also track the state of the request (in
+  progress, complete) in your stored messages and use it on the client to cover
+  the case where the client reloads the page after a disconnection, but the
+  streaming is not yet complete.
+</Note>
+
+For more robust handling of disconnects, you may want to add resumability on disconnects. Check out the [Chatbot Resume Streams](/docs/ai-sdk-ui/chatbot-resume-streams) documentation to learn more.

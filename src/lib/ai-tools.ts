@@ -1,4 +1,5 @@
-// NEW
+// src/lib/ai-tools.ts
+
 // central place to define app tools and their inferred UI types
 import { z } from 'zod';
 import { InferUITools, ToolSet } from 'ai';
@@ -17,7 +18,7 @@ const weatherTool = {
 };
 
 
-// NEW
+
 // example tool set showing how multiple tools infer into a single mapping
 export const tools = {
   weather: weatherTool,
@@ -52,6 +53,6 @@ export const tools = {
   },
 } satisfies ToolSet;
 
-// NEW
+
 // export a single inferred type so the UI/server can agree on tool I/O
 export type AppUITools = InferUITools<typeof tools>;

@@ -1,3 +1,4 @@
+// src/app/page.tsx
 // 'use client' tells Next.js this file runs in the browser, not only on the server
 'use client';
 
