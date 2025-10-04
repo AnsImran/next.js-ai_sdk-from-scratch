@@ -1,5 +1,4 @@
 // src/app/api/chat/route.ts
-
 // this gives us access to OpenAI models by name
 import { openai } from '@ai-sdk/openai';
 // these helpers convert messages into the format the model wants,
@@ -8,21 +7,18 @@ import {
   convertToModelMessages,
   streamText,
   UIMessage,
-  type LanguageModelUsage,
-  UIDataTypes, // used below to attach tool-typing to UI messages
+  validateUIMessages,
+  TypeValidationError,
+  createIdGenerator,
+  UIDataTypes,
 } from 'ai';
-
-// NEW
-// import the shared tools type (you can also import `tools` when you start wiring tool calls)
-import type { AppUITools } from '@/lib/ai-tools';
+import type { LanguageModelUsage } from 'ai';
+import { loadChat, saveChat } from '../../../util/chat-store';
+import { dataPartsSchema, metadataSchema } from '../../../util/schemas';
+import { tools } from '../../../lib/ai-tools';
 
 // tell the platform we allow streaming responses to run up to 30 seconds long
 export const maxDuration = 30;
-
-/**
- * simple in-memory chat store so the trigger-based example can work end-to-end
- * in real apps, swap this with your DB/cache (redis, postgres, etc.)
- */
 
 // optional metadata type to expose usage and some handy fields
 type MyMetadata = {
@@ -32,19 +28,8 @@ type MyMetadata = {
   model?: string;                  // model id for debugging/analytics
 };
 
-// NEW
 // make server-side UI messages tools-aware so inputs/outputs are typed end-to-end
-export type MyUIMessage = UIMessage<MyMetadata, UIDataTypes, AppUITools>;
-
-const chatStore = new Map<string, MyUIMessage[]>();
-
-async function readChat(id: string): Promise<{ messages: MyUIMessage[] }> {
-  return { messages: chatStore.get(id) ?? [] };
-}
-
-async function writeChat(id: string, messages: MyUIMessage[]): Promise<void> {
-  chatStore.set(id, messages);
-}
+export type MyUIMessage = UIMessage<MyMetadata, UIDataTypes, typeof tools>;
 
 // this function runs when the browser sends a POST request to /api/chat
 export async function POST(req: Request) {
@@ -52,10 +37,10 @@ export async function POST(req: Request) {
   const body = await req.json();
 
   // support BOTH shapes:
-  // 1) default: { messages, customKey?, user_id? }
+  // 1) default: { messages, customKey?, user_id? }  (not used by our client)
   // 2) transport-custom: { id, message? (latest), trigger?, messageId? }
   const {
-    messages,
+    messages: fullMessages,
     customKey,
     user_id,
     id,
@@ -74,25 +59,13 @@ export async function POST(req: Request) {
     route?: string;
   } = body;
 
-  // optional: you can use customKey (or other body fields) for routing, logging, or controls
-  if (customKey) {
-    // keep logs server-side; do not expose internal details to users
-    console.log('received customKey:', customKey);
-  }
-  if (user_id) {
-    // keep logs server-side; do not expose internal details to users
-    console.log('received user_id:', user_id);
-  }
-  if (route) {
-    // keep logs server-side; do not expose internal details to users
-    console.log('route: ', route);
-  }
-  if (trigger) {
-    // keep logs server-side; do not expose internal details to users
-    console.log('trigger: ', trigger);
-  }
+  // keep logs server-side; do not expose internal details to users
+  if (customKey) console.log('received customKey:', customKey);
+  if (user_id) console.log('received user_id:', user_id);
+  if (route) console.log('route: ', route);
+  if (trigger) console.log('trigger: ', trigger);
 
-  // if this is a deletion request, handle it early and return a simple ok
+  // handle deletions early and persist the change
   if (trigger === 'delete-message') {
     if (!id || !messageId) {
       return new Response(
@@ -101,10 +74,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const chat = await readChat(id);
-    const next = chat.messages.filter(m => m.id !== messageId);
-
-    await writeChat(id, next);
+    const existing = await loadChat(id);
+    const next = existing.filter(m => m.id !== messageId);
+    await saveChat({ chatId: id, messages: next });
 
     // return a small JSON response; the client already updated the UI optimistically
     return new Response(JSON.stringify({ ok: true }), {
@@ -114,57 +86,77 @@ export async function POST(req: Request) {
   }
 
   // decide which message list to send to the model
-  let effectiveMessages: MyUIMessage[] = [];
+  let combined: MyUIMessage[] = [];
 
-  if (trigger || (id && !messages)) {
+  if (trigger || (id && !fullMessages)) {
     // transport-based routing path (trigger-aware or { id, message } shape)
     if (!id) {
       throw new Error('Missing "id" for trigger-based routing.');
     }
 
-    const chat = await readChat(id);
-    let serverMessages = chat.messages;
+    // load persisted history
+    let history: MyUIMessage[] = (await loadChat(id)) as MyUIMessage[];
 
     if (trigger === 'submit-message') {
       // append the newest user message coming from the client
       if (!message) {
         throw new Error('Missing "message" for submit-message trigger.');
       }
-      serverMessages = [...serverMessages, message];
+      history = [...history, message];
     } else if (trigger === 'regenerate-message') {
       // roll back to just before the target messageId (usually the assistant message)
       if (!messageId) {
         throw new Error('Missing "messageId" for regenerate-message trigger.');
       }
-      const idx = serverMessages.findIndex(m => m.id === messageId);
+      const idx = history.findIndex(m => m.id === messageId);
       if (idx !== -1) {
-        serverMessages = serverMessages.slice(0, idx); // Chop off everything from idx onward.
+        // If the provided id is a USER message, find the preceding ASSISTANT and trim there.
+        history = history.slice(0, idx); // chop off everything from cutIndex onward
       }
     } else {
       // if no recognized trigger but we do have { id, message }, treat it like submit
       if (message) {
-        serverMessages = [...serverMessages, message];
+        history = [...history, message];
       }
     }
 
-    // persist updated history for the next turn
-    await writeChat(id, serverMessages);
-
-    effectiveMessages = serverMessages;
+    combined = history;
   } else {
     // default path: client sent the full message array
-    if (!messages) {
+    if (!fullMessages) {
       throw new Error('Missing "messages" array in request body.');
     }
-    effectiveMessages = messages;
+    combined = fullMessages;
+  }
+
+  // validate messages from storage + the new message before calling the model
+  let validated: MyUIMessage[] = [];
+  try {
+    validated = (await validateUIMessages({
+      messages: combined,
+      tools,
+    })) as MyUIMessage[];
+  } catch (error) {
+    if (error instanceof TypeValidationError) {
+      // if stored messages don't match current schemas, start fresh
+      console.error('Database messages validation failed:', error);
+      validated = [];
+    } else {
+      throw error;
+    }
   }
 
   // ask the AI for a streaming text response
   const result = streamText({
     model: openai('gpt-4.1'),                // choose which AI model to use
     system: 'You are a helpful assistant.',  // give the AI a short instruction
-    messages: convertToModelMessages(effectiveMessages), // convert UI messages to model format
+    messages: convertToModelMessages(validated), // convert UI messages to model format
+    tools,
   });
+
+  // ensure the stream runs to completion even if the client disconnects,
+  // so onFinish will still fire and persist the updated messages
+  result.consumeStream(); // fire-and-forget
 
   // attach lightweight metadata at the start and finish so the client can render
   // things like timestamps and token usage without extra round-trips
@@ -178,7 +170,14 @@ export async function POST(req: Request) {
     },
 
     // pass original messages back for UI libs that use them for reconciliation
-    originalMessages: effectiveMessages,
+    originalMessages: validated,
+
+    // generate consistent server-side message ids for persistence
+    // NEW
+    generateMessageId: createIdGenerator({
+      prefix: 'msg',
+      size: 16,
+    }),
 
     messageMetadata: ({ part }) => {
       if (part.type === 'start') {
@@ -194,6 +193,13 @@ export async function POST(req: Request) {
           totalUsage: part.totalUsage,              // richer usage details for advanced UIs
         };
       }
+    },
+
+    // when the stream finishes, persist the full message list (including AI reply)
+    // NEW
+    onFinish: async ({ messages }) => {
+      if (!id) return;
+      await saveChat({ chatId: id, messages: messages as MyUIMessage[] });
     },
   });
 }

@@ -1,0 +1,110 @@
+[
+  {
+    "id": "WITBxEddMzvodi2U",
+    "role": "user",
+    "parts": [
+      {
+        "type": "text",
+        "text": "hi"
+      }
+    ]
+  },
+  {
+    "id": "msg-P09wkQu65piqsbM1",
+    "role": "assistant",
+    "metadata": {
+      "createdAt": 1759508693131,
+      "model": "gpt-4.1",
+      "totalTokens": 101,
+      "totalUsage": {
+        "inputTokens": 90,
+        "outputTokens": 11,
+        "totalTokens": 101,
+        "reasoningTokens": 0,
+        "cachedInputTokens": 0
+      }
+    },
+    "parts": [
+      {
+        "type": "step-start"
+      },
+      {
+        "type": "text",
+        "text": "Hello! How can I help you today?",
+        "state": "done",
+        "providerMetadata": {
+          "openai": {
+            "itemId": "msg_0ac3d6a1edba05850068dff8d7438c819581578bc4cd0837fb"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "sONqEzdgn2bNzef7",
+    "role": "user",
+    "parts": [
+      {
+        "type": "text",
+        "text": "wow"
+      }
+    ]
+  },
+  {
+    "id": "msg-QMwZcojxI0SIcigd",
+    "role": "assistant",
+    "metadata": {
+      "createdAt": 1759508758087,
+      "model": "gpt-4.1",
+      "totalTokens": 163,
+      "totalUsage": {
+        "inputTokens": 147,
+        "outputTokens": 16,
+        "totalTokens": 163,
+        "reasoningTokens": 0,
+        "cachedInputTokens": 0
+      }
+    },
+    "parts": [
+      {
+        "type": "step-start"
+      },
+      {
+        "type": "text",
+        "text": "😊 Thanks! Is there something specific you'd like to talk about or need help with?",
+        "state": "done",
+        "providerMetadata": {
+          "openai": {
+            "itemId": "msg_0ac3d6a1edba05850068dff8dfb6f08195aa3f4e29d7c18c63"
+          }
+        }
+      },
+      {
+        "type": "step-start"
+      },
+      {
+        "type": "text",
+        "text": "It sounds like you’re surprised! How can I assist you today?",
+        "state": "done",
+        "providerMetadata": {
+          "openai": {
+            "itemId": "msg_0ac3d6a1edba05850068dff90be5188195b6463046153ea7dd"
+          }
+        }
+      },
+      {
+        "type": "step-start"
+      },
+      {
+        "type": "text",
+        "text": "Hi again! What surprised you? How can I assist you further?",
+        "providerMetadata": {
+          "openai": {
+            "itemId": "msg_0ac3d6a1edba05850068dff91760648195b9b74ef4bf0867fb"
+          }
+        },
+        "state": "done"
+      }
+    ]
+  }
+]

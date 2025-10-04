@@ -1,0 +1,125 @@
+[
+  {
+    "id": "JzDxZ6gveeKNZ4aW",
+    "role": "user",
+    "parts": [
+      {
+        "type": "text",
+        "text": "hi"
+      }
+    ]
+  },
+  {
+    "id": "msg-oMydJ60fXpM0Tv1x",
+    "role": "assistant",
+    "metadata": {
+      "createdAt": 1759519426772,
+      "model": "gpt-4.1",
+      "totalTokens": 101,
+      "totalUsage": {
+        "inputTokens": 90,
+        "outputTokens": 11,
+        "totalTokens": 101,
+        "reasoningTokens": 0,
+        "cachedInputTokens": 0
+      }
+    },
+    "parts": [
+      {
+        "type": "step-start"
+      },
+      {
+        "type": "text",
+        "text": "Hello! How can I help you today?",
+        "state": "done",
+        "providerMetadata": {
+          "openai": {
+            "itemId": "msg_070574249ebe6eaf0068e022c3776881a09d651f48e31abe70"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "01KR0q0gAjYDXt3K",
+    "role": "user",
+    "parts": [
+      {
+        "type": "text",
+        "text": "wow"
+      }
+    ]
+  },
+  {
+    "id": "msg-hFsjKl81JF4hSr7f",
+    "role": "assistant",
+    "metadata": {
+      "createdAt": 1759519441585,
+      "model": "gpt-4.1",
+      "totalTokens": 133,
+      "totalUsage": {
+        "inputTokens": 108,
+        "outputTokens": 25,
+        "totalTokens": 133,
+        "reasoningTokens": 0,
+        "cachedInputTokens": 0
+      }
+    },
+    "parts": [
+      {
+        "type": "step-start"
+      },
+      {
+        "type": "text",
+        "text": "Thank you! Is there something specific you’d like to talk about or ask? I’m here to help! 😊",
+        "state": "done",
+        "providerMetadata": {
+          "openai": {
+            "itemId": "msg_070574249ebe6eaf0068e022d3144881a0a752f3a3800737cf"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "3O0Nh8LYQ406yqwe",
+    "role": "user",
+    "parts": [
+      {
+        "type": "text",
+        "text": "my name?"
+      }
+    ]
+  },
+  {
+    "id": "msg-RGlhvAwGlNBtIcxC",
+    "metadata": {
+      "createdAt": 1759519510635,
+      "model": "gpt-4.1",
+      "totalTokens": 162,
+      "totalUsage": {
+        "inputTokens": 142,
+        "outputTokens": 20,
+        "totalTokens": 162,
+        "reasoningTokens": 0,
+        "cachedInputTokens": 0
+      }
+    },
+    "role": "assistant",
+    "parts": [
+      {
+        "type": "step-start"
+      },
+      {
+        "type": "text",
+        "text": "I don’t know your name yet! Would you like to tell me what it is?",
+        "providerMetadata": {
+          "openai": {
+            "itemId": "msg_070574249ebe6eaf0068e023175b4c81a0a0b646330b52f026"
+          }
+        },
+        "state": "done"
+      }
+    ]
+  }
+]

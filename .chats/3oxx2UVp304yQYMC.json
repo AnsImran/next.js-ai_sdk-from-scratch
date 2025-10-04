@@ -1,0 +1,97 @@
+[
+  {
+    "id": "sgRXH00rNFrdjGS6",
+    "role": "user",
+    "parts": [
+      {
+        "type": "text",
+        "text": "hi"
+      }
+    ]
+  },
+  {
+    "id": "msg-gFXARhbk3jfqH2h3",
+    "role": "assistant",
+    "metadata": {
+      "createdAt": 1759518582178,
+      "model": "gpt-4.1",
+      "totalTokens": 101,
+      "totalUsage": {
+        "inputTokens": 90,
+        "outputTokens": 11,
+        "totalTokens": 101,
+        "reasoningTokens": 0,
+        "cachedInputTokens": 0
+      }
+    },
+    "parts": [
+      {
+        "type": "step-start"
+      },
+      {
+        "type": "text",
+        "text": "Hello! How can I help you today?",
+        "state": "done",
+        "providerMetadata": {
+          "openai": {
+            "itemId": "msg_046c0c4dd1b452650068e01f77621081a398159c93ffc1686e"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "SPp2Z2XZFtbogpzF",
+    "role": "user",
+    "parts": [
+      {
+        "type": "text",
+        "text": "wow"
+      }
+    ]
+  },
+  {
+    "id": "msg-V88eLz8luabFLIq1",
+    "role": "assistant",
+    "metadata": {
+      "createdAt": 1759518644228,
+      "model": "gpt-4.1",
+      "totalTokens": 156,
+      "totalUsage": {
+        "inputTokens": 136,
+        "outputTokens": 20,
+        "totalTokens": 156,
+        "reasoningTokens": 0,
+        "cachedInputTokens": 0
+      }
+    },
+    "parts": [
+      {
+        "type": "step-start"
+      },
+      {
+        "type": "text",
+        "text": "Thank you! 😊 Is there something specific that amazed you, or is there something you'd like to talk about or ask?",
+        "state": "done",
+        "providerMetadata": {
+          "openai": {
+            "itemId": "msg_046c0c4dd1b452650068e01fa20d0c81a3a96605cad31caa91"
+          }
+        }
+      },
+      {
+        "type": "step-start"
+      },
+      {
+        "type": "text",
+        "text": "Wow indeed! Is there something on your mind, or anything I can help you with?",
+        "providerMetadata": {
+          "openai": {
+            "itemId": "msg_046c0c4dd1b452650068e01fb4bc6881a38a4b19e1f1f6405d"
+          }
+        },
+        "state": "done"
+      }
+    ]
+  }
+]

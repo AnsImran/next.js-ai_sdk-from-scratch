@@ -1,4 +1,4 @@
-commit: 2-chatbot_message_persistence x without code
+commit: 2-chatbot_message_persistence
 
 mutable: explanation in code generated link | https://chatgpt.com/c/68de8636-69b8-8328-86cc-d99e098ff1d7
 

@@ -17,8 +17,6 @@ const weatherTool = {
   },
 };
 
-
-
 // example tool set showing how multiple tools infer into a single mapping
 export const tools = {
   weather: weatherTool,
@@ -52,7 +50,6 @@ export const tools = {
     },
   },
 } satisfies ToolSet;
-
 
 // export a single inferred type so the UI/server can agree on tool I/O
 export type AppUITools = InferUITools<typeof tools>;
