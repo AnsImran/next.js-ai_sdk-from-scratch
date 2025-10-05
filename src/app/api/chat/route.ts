@@ -10,19 +10,34 @@ export const maxDuration = 30;
 
 // this function runs when the browser sends a POST request to /api/chat
 export async function POST(req: Request) {
-  // NEW
-  // pull optional custom fields sent at request level (e.g. customKey) alongside messages
-  const { messages, customKey, user_id }: { messages: UIMessage[]; customKey?: string; user_id?: string } = await req.json();
+  // // NEW
+  // // pull optional custom fields sent at request level (e.g. customKey) alongside messages
+  // const { messages, customKey, user_id }: { messages: UIMessage[]; customKey?: string; user_id?: string } = await req.json();
 
-  // optional: you can use customKey (or other body fields) for routing, logging, or controls
-  if (customKey) {
-    // keep logs server-side; do not expose internal details to users
-    console.log('received customKey:', customKey);
-  }
-  if (user_id) {
-    // keep logs server-side; do not expose internal details to users
-    console.log('received customKey:', user_id);
-  }
+  // turn the incoming request body into a js object
+  const body = await req.json();
+
+  // print the whole body, nice and expanded
+  console.log("Full request body: ", JSON.stringify(body, null, 2));
+
+
+  // // optional: you can use customKey (or other body fields) for routing, logging, or controls
+  // if (customKey) {
+  //   // keep logs server-side; do not expose internal details to users
+  //   console.log('received customKey:', customKey);
+  // }
+  // if (user_id) {
+  //   // keep logs server-side; do not expose internal details to users
+  //   console.log('received customKey:', user_id);
+  // }
+
+  // Extracting messages, customKey, user_id from the body
+  const { messages, customKey, user_id }: { messages: UIMessage[]; customKey?: string; user_id?: string } = body;
+  // const { messages }: { messages: UIMessage[] } = body;
+  // console.log("Messages only:", messages);
+
+
+
 
 
   // ask the AI for a streaming text response
@@ -31,6 +46,15 @@ export async function POST(req: Request) {
     system: 'You are a helpful assistant.', // give the AI a short instruction
     messages: convertToModelMessages(messages), // convert UI messages to model format
   });
+
+
+  // // 🔊 print **all** stream events as they arrive (not just text)
+  // let i = 0;
+  // for await (const event of result.fullStream) {
+  //   i += 1;
+  //   console.log(`AI event #${i}:\n`, JSON.stringify(event, null, 2));
+  // }
+
 
   // turn the stream into a response the browser understands for live updates
   return result.toUIMessageStreamResponse();

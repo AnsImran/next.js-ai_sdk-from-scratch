@@ -35,7 +35,20 @@ export default function Page() {
     // tell the chat helper how to reach our server API
     transport: new DefaultChatTransport({
       api: '/api/chat', // this is the server route we’ll hit when we send messages OR 'http://localhost:8080/ask_ai_agent/invoke'
+      headers: {
+        Authorization: 'Bearer token123',        // example bearer token
+        'X-Custom-Header': 'custom-value',       // any extra header your API expects
+      },
+      body: {
+        temperature: 0.7,                         // an example model control your API can read
+        max_tokens: 100,                          // another example control
+        user_id: '123',                           // an app-level identifier
+        customKey: 'customValue',                 // example custom field (see route.ts)
+      },
+      credentials: 'same-origin',
     }),
+
+
     // smooth out UI updates so we re-render at most ~every 50ms while streaming
     // this keeps the UI snappy without re-rendering on every tiny chunk
     experimental_throttle: 50,
@@ -143,26 +156,26 @@ export default function Page() {
             // use this to pass auth, knobs like temperature, or custom fields to your API
             sendMessage(
               { text: input },
-              {
-                // headers are merged on top of any hook-level headers
-                headers: {
-                  Authorization: 'Bearer token123',        // example bearer token
-                  'X-Custom-Header': 'custom-value',       // any extra header your API expects
-                },
-                // body fields travel alongside the messages for server-side handling
-                body: {
-                  temperature: 0.7,                         // an example model control your API can read
-                  max_tokens: 100,                          // another example control
-                  user_id: '123',                           // an app-level identifier
-                  customKey: 'customValue',                 // example custom field (see route.ts)
-                },
-                // metadata is not sent to the server by the default transport;
-                // it’s available to your app for local bookkeeping/analytics
-                metadata: {
-                  userId: 'user123',
-                  sessionId: 'session456',
-                },
-              },
+              // {
+              //   // headers are merged on top of any hook-level headers
+              //   headers: {
+              //     Authorization: 'Bearer token123',        // example bearer token
+              //     'X-Custom-Header': 'custom-value',       // any extra header your API expects
+              //   },
+              //   // body fields travel alongside the messages for server-side handling
+              //   body: {
+              //     temperature: 0.7,                         // an example model control your API can read
+              //     max_tokens: 100,                          // another example control
+              //     user_id: '123',                           // an app-level identifier
+              //     customKey: 'customValue',                 // example custom field (see route.ts)
+              //   },
+              //   // metadata is not sent to the server by the default transport;
+              //   // it’s available to your app for local bookkeeping/analytics
+              //   metadata: {
+              //     userId: 'user123',
+              //     sessionId: 'session456',
+              //   },
+              // },
             );
             // clear the input box after sending
             setInput('');
