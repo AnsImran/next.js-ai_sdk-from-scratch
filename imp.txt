@@ -35,3 +35,31 @@ https://chatgpt.com/c/68e22970-1430-8326-acb6-7249f29c4146
 
 error solve and syntax explaining:
 https://chatgpt.com/c/68e23e0a-cee8-8330-928d-4fe292eee7a9
+
+post req structure:
+```
+INFO:     ::1:63447 - "OPTIONS /stream?agent_id=ask_ai_agent HTTP/1.1" 200 OK
+{
+  "model": "gpt-4.1-nano-2025-04-14",
+  "thread_id": "swagger-1",
+  "user_id": "swagger",
+  "message": "hola",
+  "last_message": {
+    "parts": [
+      {
+        "type": "text",
+        "text": "hola"
+      }
+    ],
+    "id": "h6VB6uZoRU6l7LQi",
+    "role": "user"
+  },
+  "agent_config": {},
+  "form_str": "Name: Return Journey Planning Form \nQ1: What is your current legal status in Germany? \n1. Temporary Protection under EU Directive ...",
+  "user_language": "english",
+  "stream_tokens": true
+}
+INFO:     ::1:63447 - "POST /stream?agent_id=ask_ai_agent HTTP/1.1" 200 OK
+---CHECK RELEVANCE---
+```
+---------------------------------------------------------------------------
