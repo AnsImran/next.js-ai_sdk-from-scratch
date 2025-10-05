@@ -1,4 +1,4 @@
-commit: 1-chatbot-request_configuration
+commit: initial_wiring_with_chat_microservice
 
 mutable: syntax explanantion not required
 
@@ -26,3 +26,12 @@ do not add any other new code snippet.
 context
 ---
 """
+
+--------------------------------------------------------------------------
+connected with chat-microservice
+
+generate:
+https://chatgpt.com/c/68e22970-1430-8326-acb6-7249f29c4146
+
+error solve and syntax explaining:
+https://chatgpt.com/c/68e23e0a-cee8-8330-928d-4fe292eee7a9

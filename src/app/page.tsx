@@ -1,4 +1,4 @@
-// page.tsx
+// src/app/page.tsx
 // 'use client' tells Next.js this file runs in the browser, not only on the server
 'use client';
 
@@ -34,18 +34,40 @@ export default function Page() {
   } = useChat({
     // tell the chat helper how to reach our server API
     transport: new DefaultChatTransport({
-      api: '/api/chat', // this is the server route we’ll hit when we send messages OR 'http://localhost:8080/ask_ai_agent/invoke'
-      headers: {
-        Authorization: 'Bearer token123',        // example bearer token
-        'X-Custom-Header': 'custom-value',       // any extra header your API expects
+      api: 'http://localhost:8080/stream?agent_id=ask_ai_agent', // this is the server route we’ll hit when we send messages OR '/api/chat'
+      prepareSendMessagesRequest: ({ id, messages, trigger }) => {
+        const lastMessage = messages[messages.length - 1];
+        const messageId = lastMessage?.id;
+        const textPart = lastMessage?.parts.find(
+          (p): p is { type: 'text'; text: string } => p.type === 'text'
+        ) ?? null;
+        const lastText = textPart?.text ?? '';
+
+        return {
+          // 👇 match the microservice expectations
+          headers: {
+            accept: 'text/event-stream',
+            'Content-Type': 'application/json',
+          },
+
+          // hook-level defaults (can be overridden per send below)
+          body: {
+            model: 'gpt-4.1-nano-2025-04-14',
+            thread_id: 'swagger-1',
+            user_id: 'swagger',
+            message: lastText,
+            last_message: lastMessage,
+            agent_config: {},
+            form_str:
+              'Name: Return Journey Planning Form \nQ1: What is your current legal status in Germany? \n1. Temporary Protection under EU Directive ...',
+            user_language: 'english',
+            stream_tokens: true,
+          },
+          credentials: 'same-origin',
+        }
       },
-      body: {
-        temperature: 0.7,                         // an example model control your API can read
-        max_tokens: 100,                          // another example control
-        user_id: '123',                           // an app-level identifier
-        customKey: 'customValue',                 // example custom field (see route.ts)
-      },
-      credentials: 'same-origin',
+
+
     }),
 
 
@@ -163,12 +185,13 @@ export default function Page() {
               //     'X-Custom-Header': 'custom-value',       // any extra header your API expects
               //   },
               //   // body fields travel alongside the messages for server-side handling
-              //   body: {
+                // body: {
+                //   message: 'hi',
               //     temperature: 0.7,                         // an example model control your API can read
               //     max_tokens: 100,                          // another example control
               //     user_id: '123',                           // an app-level identifier
               //     customKey: 'customValue',                 // example custom field (see route.ts)
-              //   },
+                // },
               //   // metadata is not sent to the server by the default transport;
               //   // it’s available to your app for local bookkeeping/analytics
               //   metadata: {
