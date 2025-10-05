@@ -20,6 +20,10 @@ import { tools } from '../../../lib/ai-tools';
 // tell the platform we allow streaming responses to run up to 30 seconds long
 export const maxDuration = 30;
 
+
+export const runtime = 'nodejs';
+
+
 // optional metadata type to expose usage and some handy fields
 type MyMetadata = {
   totalUsage?: LanguageModelUsage; // full usage object (tokens, input/output breakdown)

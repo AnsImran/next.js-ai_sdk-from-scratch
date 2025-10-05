@@ -8,6 +8,10 @@ immutable: explanation in code generated link | https://chatgpt.com/c/68de8636-6
 
 code generated here: https://chatgpt.com/c/68de8636-69b8-8328-86cc-d99e098ff1d7
 
+Persistence, new chat, existing chat, Validating loaded messages, displaying chat, Storing messages, client and server side message ids, last message sending, client disconnect
+
+
+
 
 
 code generation prompt:
