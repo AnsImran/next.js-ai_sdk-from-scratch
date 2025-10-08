@@ -1,4 +1,4 @@
-AI SDK UI (fron Next.js/Vercel) from scratch.
+AI SDK UI (from Next.js/Vercel) from scratch.
 ---
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
