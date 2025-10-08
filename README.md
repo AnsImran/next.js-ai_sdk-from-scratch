@@ -1,4 +1,4 @@
-All my learning of ai-sdk-ui is in this repo.
+AI SDK UI (fron Next.js/Vercel) from scratch.
 ---
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
