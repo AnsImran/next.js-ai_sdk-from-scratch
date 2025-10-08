@@ -1,436 +1,572 @@
-commit: 2-chatbot_message_persistence
+commit: 4-tool-usage:initial_version
 
-mutable: explanation in code generated link | https://chatgpt.com/c/68de8636-69b8-8328-86cc-d99e098ff1d7
+mutable: explanation in code generated link | https://chatgpt.com/s/cd_68e6413aa4ac8191891d95bce9bdcc0a
 
+immutable: explanation in code generated link | https://chatgpt.com/s/cd_68e6413aa4ac8191891d95bce9bdcc0a
 
-immutable: explanation in code generated link | https://chatgpt.com/c/68de8636-69b8-8328-86cc-d99e098ff1d7
+used codex.
+code generated here: https://chatgpt.com/s/cd_68e6413aa4ac8191891d95bce9bdcc0a
 
-
-code generated here: https://chatgpt.com/c/68de8636-69b8-8328-86cc-d99e098ff1d7
-
-Persistence, new chat, existing chat, Validating loaded messages, displaying chat, Storing messages, client and server side message ids, last message sending, client disconnect
-
-
-
+---
 
 
 code generation prompt:
-the code snippets that are present in context but absent in old-code.
-add those code snippets to the old-code.
-add comments to these new code snippets as well.
-while adding comments follow the rules, conventions and style of commets in the old code.
-keep the comments of old-code intact.
-return the new version of old code, with new code snippets and extra comments for new code snippets.
-before the new code snippets, add // NEW.
-remove // NEW from comments in the old-code.
-important:
-the {Type_Inference_for_Tools} section and onwards are the new code snippets.
-in case of {Setting Up Server-side ID Generation} go for option-1 (Using generateMessageId in toUIMessageStreamResponse).
-in case of {Validating messages on the server}-{Validation with tools} use the tools src/lib/ai-tools.ts.
-note: there is already a ChatStore on the backend, feel free to remove it and the code related to it. and replace with the new
-chat persistence code.
+Kindly give me a page.tsx and route.ts file code. I just need these two files. i do not need anything else. Kindly add (in the code) all features described in the guide section, except - see next lines.. Do not add features/code related to:
+Automatically executed client-side tools
+Tools that require user interaction, such as confirmation dialogs
+Only add feature/code related to:
+Automatically executed server-side tools.
 ---
-new code snippets along with explanations:
----
-# Chatbot Message Persistence
+<guide>
 
-Being able to store and load chat messages is crucial for most AI chatbots.
-In this guide, we'll show how to implement message persistence with `useChat` and `streamText`.
+# Chatbot Tool Usage
+
+With [`useChat`](/docs/reference/ai-sdk-ui/use-chat) and [`streamText`](/docs/reference/ai-sdk-core/stream-text), you can use tools in your chatbot application.
+The AI SDK supports three types of tools in this context:
+
+1. Automatically executed server-side tools
+2. Automatically executed client-side tools
+3. Tools that require user interaction, such as confirmation dialogs
+
+The flow is as follows:
+
+1. The user enters a message in the chat UI.
+1. The message is sent to the API route.
+1. In your server side route, the language model generates tool calls during the `streamText` call.
+1. All tool calls are forwarded to the client.
+1. Server-side tools are executed using their `execute` method and their results are forwarded to the client.
+1. Client-side tools that should be automatically executed are handled with the `onToolCall` callback.
+   You must call `addToolResult` to provide the tool result.
+1. Client-side tool that require user interactions can be displayed in the UI.
+   The tool calls and results are available as tool invocation parts in the `parts` property of the last assistant message.
+1. When the user interaction is done, `addToolResult` can be used to add the tool result to the chat.
+1. The chat can be configured to automatically submit when all tool results are available using `sendAutomaticallyWhen`.
+   This triggers another iteration of this flow.
+
+The tool calls and tool executions are integrated into the assistant message as typed tool parts.
+A tool part is at first a tool call, and then it becomes a tool result when the tool is executed.
+The tool result contains all information about the tool call as well as the result of the tool execution.
 
 <Note>
-  This guide does not cover authorization, error handling, or other real-world
-  considerations. It is intended to be a simple example of how to implement
-  message persistence.
+  Tool result submission can be configured using the `sendAutomaticallyWhen`
+  option. You can use the `lastAssistantMessageIsCompleteWithToolCalls` helper
+  to automatically submit when all tool results are available. This simplifies
+  the client-side code while still allowing full control when needed.
 </Note>
 
-## Starting a new chat
+## Example
 
-When the user navigates to the chat page without providing a chat ID,
-we need to create a new chat and redirect to the chat page with the new chat ID.
+In this example, we'll use three tools:
 
-```tsx filename="app/chat/page.tsx"
-import { redirect } from 'next/navigation';
-import { createChat } from '@util/chat-store';
+- `getWeatherInformation`: An automatically executed server-side tool that returns the weather in a given city.
+- `askForConfirmation`: A user-interaction client-side tool that asks the user for confirmation.
+- `getLocation`: An automatically executed client-side tool that returns a random city.
 
-export default async function Page() {
-  const id = await createChat(); // create a new chat
-  redirect(`/chat/${id}`); // redirect to chat page, see below
-}
-```
+### API route
 
-Our example chat store implementation uses files to store the chat messages.
-In a real-world application, you would use a database or a cloud storage service,
-and get the chat ID from the database.
-That being said, the function interfaces are designed to be easily replaced with other implementations.
-
-```tsx filename="util/chat-store.ts"
-import { generateId } from 'ai';
-import { existsSync, mkdirSync } from 'fs';
-import { writeFile } from 'fs/promises';
-import path from 'path';
-
-export async function createChat(): Promise<string> {
-  const id = generateId(); // generate a unique chat ID
-  await writeFile(getChatFile(id), '[]'); // create an empty chat file
-  return id;
-}
-
-function getChatFile(id: string): string {
-  const chatDir = path.join(process.cwd(), '.chats');
-  if (!existsSync(chatDir)) mkdirSync(chatDir, { recursive: true });
-  return path.join(chatDir, `${id}.json`);
-}
-```
-
-## Loading an existing chat
-
-When the user navigates to the chat page with a chat ID, we need to load the chat messages from storage.
-
-The `loadChat` function in our file-based chat store is implemented as follows:
-
-```tsx filename="util/chat-store.ts"
-import { UIMessage } from 'ai';
-import { readFile } from 'fs/promises';
-
-export async function loadChat(id: string): Promise<UIMessage[]> {
-  return JSON.parse(await readFile(getChatFile(id), 'utf8'));
-}
-
-// ... rest of the file
-```
-
-## Validating messages on the server
-
-When processing messages on the server that contain tool calls, custom metadata, or data parts, you should validate them using `validateUIMessages` before sending them to the model.
-
-### Validation with tools
-
-When your messages include tool calls, validate them against your tool definitions:
-
-```tsx filename="app/api/chat/route.ts" highlight="7-25,32-37"
-import {
-  convertToModelMessages,
-  streamText,
-  UIMessage,
-  validateUIMessages,
-  tool,
-} from 'ai';
-import { z } from 'zod';
-import { loadChat, saveChat } from '@util/chat-store';
+```tsx filename='app/api/chat/route.ts'
 import { openai } from '@ai-sdk/openai';
-import { dataPartsSchema, metadataSchema } from '@util/schemas';
-
-// Define your tools
-const tools = {
-  weather: tool({
-    description: 'Get weather information',
-    parameters: z.object({
-      location: z.string(),
-      units: z.enum(['celsius', 'fahrenheit']),
-    }),
-    execute: async ({ location, units }) => {
-      /* tool implementation */
-    },
-  }),
-  // other tools
-};
-
-export async function POST(req: Request) {
-  const { message, id } = await req.json();
-
-  // Load previous messages from database
-  const previousMessages = await loadChat(id);
-
-  // Append new message to previousMessages messages
-  const messages = [...previousMessages, message];
-
-  // Validate loaded messages against
-  // tools, data parts schema, and metadata schema
-  const validatedMessages = await validateUIMessages({
-    messages,
-    tools, // Ensures tool calls in messages match current schemas
-    dataPartsSchema,
-    metadataSchema,
-  });
-
-  const result = streamText({
-    model: openai('gpt-4o-mini'),
-    messages: convertToModelMessages(validatedMessages),
-    tools,
-  });
-
-  return result.toUIMessageStreamResponse({
-    originalMessages: messages,
-    onFinish: ({ messages }) => {
-      saveChat({ chatId: id, messages });
-    },
-  });
-}
-```
-
-### Handling validation errors
-
-Handle validation errors gracefully when messages from the database don't match current schemas:
-
-```tsx filename="app/api/chat/route.ts" highlight="3,10-24"
-import {
-  convertToModelMessages,
-  streamText,
-  validateUIMessages,
-  TypeValidationError,
-} from 'ai';
-import { type MyUIMessage } from '@/types';
-
-export async function POST(req: Request) {
-  const { message, id } = await req.json();
-
-  // Load and validate messages from database
-  let validatedMessages: MyUIMessage[];
-
-  try {
-    const previousMessages = await loadMessagesFromDB(id);
-    validatedMessages = await validateUIMessages({
-      // append the new message to the previous messages:
-      messages: [...previousMessages, message],
-      tools,
-      metadataSchema,
-    });
-  } catch (error) {
-    if (error instanceof TypeValidationError) {
-      // Log validation error for monitoring
-      console.error('Database messages validation failed:', error);
-      // Could implement message migration or filtering here
-      // For now, start with empty history
-      validatedMessages = [];
-    } else {
-      throw error;
-    }
-  }
-
-  // Continue with validated messages...
-}
-```
-
-
-
-## Storing messages
-
-`useChat` sends the chat id and the messages to the backend.
-
-<Note>
-  The `useChat` message format is different from the `ModelMessage` format. The
-  `useChat` message format is designed for frontend display, and contains
-  additional fields such as `id` and `createdAt`. We recommend storing the
-  messages in the `useChat` message format.
-
-When loading messages from storage that contain tools, metadata, or custom data
-parts, validate them using `validateUIMessages` before processing (see the
-[validation section](#validating-messages-from-database) above).
-
-</Note>
-
-Storing messages is done in the `onFinish` callback of the `toUIMessageStreamResponse` function.
-`onFinish` receives the complete messages including the new AI response as `UIMessage[]`.
-
-```tsx filename="app/api/chat/route.ts" highlight="6,11-17"
-import { openai } from '@ai-sdk/openai';
-import { saveChat } from '@util/chat-store';
 import { convertToModelMessages, streamText, UIMessage } from 'ai';
+import { z } from 'zod';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages, chatId }: { messages: UIMessage[]; chatId: string } =
-    await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
   const result = streamText({
-    model: openai('gpt-4o-mini'),
+    model: openai('gpt-4o'),
     messages: convertToModelMessages(messages),
+    tools: {
+      // server-side tool with execute function:
+      getWeatherInformation: {
+        description: 'show the weather in a given city to the user',
+        inputSchema: z.object({ city: z.string() }),
+        execute: async ({}: { city: string }) => {
+          const weatherOptions = ['sunny', 'cloudy', 'rainy', 'snowy', 'windy'];
+          return weatherOptions[
+            Math.floor(Math.random() * weatherOptions.length)
+          ];
+        },
+      },
+      // client-side tool that starts user interaction:
+      askForConfirmation: {
+        description: 'Ask the user for confirmation.',
+        inputSchema: z.object({
+          message: z.string().describe('The message to ask for confirmation.'),
+        }),
+      },
+      // client-side tool that is automatically executed on the client:
+      getLocation: {
+        description:
+          'Get the user location. Always ask for confirmation before using this tool.',
+        inputSchema: z.object({}),
+      },
+    },
   });
 
-  return result.toUIMessageStreamResponse({
-    originalMessages: messages,
-    onFinish: ({ messages }) => {
-      saveChat({ chatId, messages });
+  return result.toUIMessageStreamResponse();
+}
+```
+
+### Client-side page
+
+The client-side page uses the `useChat` hook to create a chatbot application with real-time message streaming.
+Tool calls are displayed in the chat UI as typed tool parts.
+Please make sure to render the messages using the `parts` property of the message.
+
+There are three things worth mentioning:
+
+1. The [`onToolCall`](/docs/reference/ai-sdk-ui/use-chat#on-tool-call) callback is used to handle client-side tools that should be automatically executed.
+   In this example, the `getLocation` tool is a client-side tool that returns a random city.
+   You call `addToolResult` to provide the result (without `await` to avoid potential deadlocks).
+
+   <Note>
+     Always check `if (toolCall.dynamic)` first in your `onToolCall` handler.
+     Without this check, TypeScript will throw an error like: `Type 'string' is
+     not assignable to type '"toolName1" | "toolName2"'` when you try to use
+     `toolCall.toolName` in `addToolResult`.
+   </Note>
+
+2. The [`sendAutomaticallyWhen`](/docs/reference/ai-sdk-ui/use-chat#send-automatically-when) option with `lastAssistantMessageIsCompleteWithToolCalls` helper automatically submits when all tool results are available.
+
+3. The `parts` array of assistant messages contains tool parts with typed names like `tool-askForConfirmation`.
+   The client-side tool `askForConfirmation` is displayed in the UI.
+   It asks the user for confirmation and displays the result once the user confirms or denies the execution.
+   The result is added to the chat using `addToolResult` with the `tool` parameter for type safety.
+
+```tsx filename='app/page.tsx' highlight="2,6,10,14-20"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from 'ai';
+import { useState } from 'react';
+
+export default function Chat() {
+  const { messages, sendMessage, addToolResult } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+
+    // run client-side tools that are automatically executed:
+    async onToolCall({ toolCall }) {
+      // Check if it's a dynamic tool first for proper type narrowing
+      if (toolCall.dynamic) {
+        return;
+      }
+
+      if (toolCall.toolName === 'getLocation') {
+        const cities = ['New York', 'Los Angeles', 'Chicago', 'San Francisco'];
+
+        // No await - avoids potential deadlocks
+        addToolResult({
+          tool: 'getLocation',
+          toolCallId: toolCall.toolCallId,
+          output: cities[Math.floor(Math.random() * cities.length)],
+        });
+      }
+    },
+  });
+  const [input, setInput] = useState('');
+
+  return (
+    <>
+      {messages?.map(message => (
+        <div key={message.id}>
+          <strong>{`${message.role}: `}</strong>
+          {message.parts.map(part => {
+            switch (part.type) {
+              // render text parts as simple text:
+              case 'text':
+                return part.text;
+
+              // for tool parts, use the typed tool part names:
+              case 'tool-askForConfirmation': {
+                const callId = part.toolCallId;
+
+                switch (part.state) {
+                  case 'input-streaming':
+                    return (
+                      <div key={callId}>Loading confirmation request...</div>
+                    );
+                  case 'input-available':
+                    return (
+                      <div key={callId}>
+                        {part.input.message}
+                        <div>
+                          <button
+                            onClick={() =>
+                              addToolResult({
+                                tool: 'askForConfirmation',
+                                toolCallId: callId,
+                                output: 'Yes, confirmed.',
+                              })
+                            }
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() =>
+                              addToolResult({
+                                tool: 'askForConfirmation',
+                                toolCallId: callId,
+                                output: 'No, denied',
+                              })
+                            }
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  case 'output-available':
+                    return (
+                      <div key={callId}>
+                        Location access allowed: {part.output}
+                      </div>
+                    );
+                  case 'output-error':
+                    return <div key={callId}>Error: {part.errorText}</div>;
+                }
+                break;
+              }
+
+              case 'tool-getLocation': {
+                const callId = part.toolCallId;
+
+                switch (part.state) {
+                  case 'input-streaming':
+                    return (
+                      <div key={callId}>Preparing location request...</div>
+                    );
+                  case 'input-available':
+                    return <div key={callId}>Getting location...</div>;
+                  case 'output-available':
+                    return <div key={callId}>Location: {part.output}</div>;
+                  case 'output-error':
+                    return (
+                      <div key={callId}>
+                        Error getting location: {part.errorText}
+                      </div>
+                    );
+                }
+                break;
+              }
+
+              case 'tool-getWeatherInformation': {
+                const callId = part.toolCallId;
+
+                switch (part.state) {
+                  // example of pre-rendering streaming tool inputs:
+                  case 'input-streaming':
+                    return (
+                      <pre key={callId}>{JSON.stringify(part, null, 2)}</pre>
+                    );
+                  case 'input-available':
+                    return (
+                      <div key={callId}>
+                        Getting weather information for {part.input.city}...
+                      </div>
+                    );
+                  case 'output-available':
+                    return (
+                      <div key={callId}>
+                        Weather in {part.input.city}: {part.output}
+                      </div>
+                    );
+                  case 'output-error':
+                    return (
+                      <div key={callId}>
+                        Error getting weather for {part.input.city}:{' '}
+                        {part.errorText}
+                      </div>
+                    );
+                }
+                break;
+              }
+            }
+          })}
+          <br />
+        </div>
+      ))}
+
+      <form
+        onSubmit={e => {
+          e.preventDefault();
+          if (input.trim()) {
+            sendMessage({ text: input });
+            setInput('');
+          }
+        }}
+      >
+        <input value={input} onChange={e => setInput(e.target.value)} />
+      </form>
+    </>
+  );
+}
+```
+
+### Error handling
+
+Sometimes an error may occur during client-side tool execution. Use the `addToolResult` method with a `state` of `output-error` and `errorText` value instead of `output` record the error.
+
+```tsx filename='app/page.tsx' highlight="19,36-41"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from 'ai';
+import { useState } from 'react';
+
+export default function Chat() {
+  const { messages, sendMessage, addToolResult } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+
+    // run client-side tools that are automatically executed:
+    async onToolCall({ toolCall }) {
+      // Check if it's a dynamic tool first for proper type narrowing
+      if (toolCall.dynamic) {
+        return;
+      }
+
+      if (toolCall.toolName === 'getWeatherInformation') {
+        try {
+          const weather = await getWeatherInformation(toolCall.input);
+
+          // No await - avoids potential deadlocks
+          addToolResult({
+            tool: 'getWeatherInformation',
+            toolCallId: toolCall.toolCallId,
+            output: weather,
+          });
+        } catch (err) {
+          addToolResult({
+            tool: 'getWeatherInformation',
+            toolCallId: toolCall.toolCallId,
+            state: 'output-error',
+            errorText: 'Unable to get the weather information',
+          });
+        }
+      }
     },
   });
 }
 ```
 
-The actual storage of the messages is done in the `saveChat` function, which in
-our file-based chat store is implemented as follows:
+## Dynamic Tools
 
-```tsx filename="util/chat-store.ts"
-import { UIMessage } from 'ai';
-import { writeFile } from 'fs/promises';
+When using dynamic tools (tools with unknown types at compile time), the UI parts use a generic `dynamic-tool` type instead of specific tool types:
 
-export async function saveChat({
-  chatId,
-  messages,
-}: {
-  chatId: string;
-  messages: UIMessage[];
-}): Promise<void> {
-  const content = JSON.stringify(messages, null, 2);
-  await writeFile(getChatFile(chatId), content);
+```tsx filename='app/page.tsx'
+{
+  message.parts.map((part, index) => {
+    switch (part.type) {
+      // Static tools with specific (`tool-${toolName}`) types
+      case 'tool-getWeatherInformation':
+        return <WeatherDisplay part={part} />;
+
+      // Dynamic tools use generic `dynamic-tool` type
+      case 'dynamic-tool':
+        return (
+          <div key={index}>
+            <h4>Tool: {part.toolName}</h4>
+            {part.state === 'input-streaming' && (
+              <pre>{JSON.stringify(part.input, null, 2)}</pre>
+            )}
+            {part.state === 'output-available' && (
+              <pre>{JSON.stringify(part.output, null, 2)}</pre>
+            )}
+            {part.state === 'output-error' && (
+              <div>Error: {part.errorText}</div>
+            )}
+          </div>
+        );
+    }
+  });
 }
-
-// ... rest of the file
 ```
 
-## Message IDs
+Dynamic tools are useful when integrating with:
 
-In addition to a chat ID, each message has an ID.
-You can use this message ID to e.g. manipulate individual messages.
+- MCP (Model Context Protocol) tools without schemas
+- User-defined functions loaded at runtime
+- External tool providers
 
-### Client-side vs Server-side ID Generation
+## Tool call streaming
 
-By default, message IDs are generated client-side:
+Tool call streaming is **enabled by default** in AI SDK 5.0, allowing you to stream tool calls while they are being generated. This provides a better user experience by showing tool inputs as they are generated in real-time.
 
-- User message IDs are generated by the `useChat` hook on the client
-- AI response message IDs are generated by `streamText` on the server
-
-For applications without persistence, client-side ID generation works perfectly.
-However, **for persistence, you need server-side generated IDs** to ensure consistency across sessions and prevent ID conflicts when messages are stored and retrieved.
-
-### Setting Up Server-side ID Generation
-
-When implementing persistence, you have two options for generating server-side IDs:
-
-1. **Using `generateMessageId` in `toUIMessageStreamResponse`**
-2. **Setting IDs in your start message part with `createUIMessageStream`**
-
-#### Option 1: Using `generateMessageId` in `toUIMessageStreamResponse`
-
-You can control the ID format by providing ID generators using [`createIdGenerator()`](/docs/reference/ai-sdk-core/create-id-generator):
-
-```tsx filename="app/api/chat/route.ts" highlight="7-11"
-import { createIdGenerator, streamText } from 'ai';
-
+```tsx filename='app/api/chat/route.ts'
 export async function POST(req: Request) {
-  // ...
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
   const result = streamText({
+    model: openai('gpt-4o'),
+    messages: convertToModelMessages(messages),
+    // toolCallStreaming is enabled by default in v5
     // ...
   });
 
-  return result.toUIMessageStreamResponse({
-    originalMessages: messages,
-    // Generate consistent server-side IDs for persistence:
-    generateMessageId: createIdGenerator({
-      prefix: 'msg',
-      size: 16,
-    }),
-    onFinish: ({ messages }) => {
-      saveChat({ chatId, messages });
-    },
-  });
+  return result.toUIMessageStreamResponse();
 }
 ```
 
-#### Option 2: Setting IDs with `createUIMessageStream`
+With tool call streaming enabled, partial tool calls are streamed as part of the data stream.
+They are available through the `useChat` hook.
+The typed tool parts of assistant messages will also contain partial tool calls.
+You can use the `state` property of the tool part to render the correct UI.
 
-Alternatively, you can use `createUIMessageStream` to control the message ID by writing a start message part:
+```tsx filename='app/page.tsx' highlight="9,10"
+export default function Chat() {
+  // ...
+  return (
+    <>
+      {messages?.map(message => (
+        <div key={message.id}>
+          {message.parts.map(part => {
+            switch (part.type) {
+              case 'tool-askForConfirmation':
+              case 'tool-getLocation':
+              case 'tool-getWeatherInformation':
+                switch (part.state) {
+                  case 'input-streaming':
+                    return <pre>{JSON.stringify(part.input, null, 2)}</pre>;
+                  case 'input-available':
+                    return <pre>{JSON.stringify(part.input, null, 2)}</pre>;
+                  case 'output-available':
+                    return <pre>{JSON.stringify(part.output, null, 2)}</pre>;
+                  case 'output-error':
+                    return <div>Error: {part.errorText}</div>;
+                }
+            }
+          })}
+        </div>
+      ))}
+    </>
+  );
+}
+```
 
-```tsx filename="app/api/chat/route.ts" highlight="8-18"
-import {
-  generateId,
-  streamText,
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-} from 'ai';
+## Step start parts
+
+When you are using multi-step tool calls, the AI SDK will add step start parts to the assistant messages.
+If you want to display boundaries between tool calls, you can use the `step-start` parts as follows:
+
+```tsx filename='app/page.tsx'
+// ...
+// where you render the message parts:
+message.parts.map((part, index) => {
+  switch (part.type) {
+    case 'step-start':
+      // show step boundaries as horizontal lines:
+      return index > 0 ? (
+        <div key={index} className="text-gray-500">
+          <hr className="my-2 border-gray-300" />
+        </div>
+      ) : null;
+    case 'text':
+    // ...
+    case 'tool-askForConfirmation':
+    case 'tool-getLocation':
+    case 'tool-getWeatherInformation':
+    // ...
+  }
+});
+// ...
+```
+
+## Server-side Multi-Step Calls
+
+You can also use multi-step calls on the server-side with `streamText`.
+This works when all invoked tools have an `execute` function on the server side.
+
+```tsx filename='app/api/chat/route.ts' highlight="15-21,24"
+import { openai } from '@ai-sdk/openai';
+import { convertToModelMessages, streamText, UIMessage, stepCountIs } from 'ai';
+import { z } from 'zod';
 
 export async function POST(req: Request) {
-  const { messages, chatId } = await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
-  const stream = createUIMessageStream({
-    execute: ({ writer }) => {
-      // Write start message part with custom ID
-      writer.write({
-        type: 'start',
-        messageId: generateId(), // Generate server-side ID for persistence
-      });
-
-      const result = streamText({
-        model: openai('gpt-4o-mini'),
-        messages: convertToModelMessages(messages),
-      });
-
-      writer.merge(result.toUIMessageStream({ sendStart: false })); // omit start message part
+  const result = streamText({
+    model: openai('gpt-4o'),
+    messages: convertToModelMessages(messages),
+    tools: {
+      getWeatherInformation: {
+        description: 'show the weather in a given city to the user',
+        inputSchema: z.object({ city: z.string() }),
+        // tool has execute function:
+        execute: async ({}: { city: string }) => {
+          const weatherOptions = ['sunny', 'cloudy', 'rainy', 'snowy', 'windy'];
+          return weatherOptions[
+            Math.floor(Math.random() * weatherOptions.length)
+          ];
+        },
+      },
     },
-    originalMessages: messages,
-    onFinish: ({ responseMessage }) => {
-      // save your chat here
-    },
+    stopWhen: stepCountIs(5),
   });
 
-  return createUIMessageStreamResponse({ stream });
+  return result.toUIMessageStreamResponse();
 }
 ```
 
-<Note>
-  For client-side applications that don't require persistence, you can still customize client-side ID generation:
+## Errors
 
-```tsx filename="ui/chat.tsx"
-import { createIdGenerator } from 'ai';
-import { useChat } from '@ai-sdk/react';
+Language models can make errors when calling tools.
+By default, these errors are masked for security reasons, and show up as "An error occurred" in the UI.
 
-const { ... } = useChat({
-  generateId: createIdGenerator({
-    prefix: 'msgc',
-    size: 16,
-  }),
+To surface the errors, you can use the `onError` function when calling `toUIMessageResponse`.
+
+```tsx
+export function errorHandler(error: unknown) {
+  if (error == null) {
+    return 'unknown error';
+  }
+
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return JSON.stringify(error);
+}
+```
+
+```tsx
+const result = streamText({
   // ...
+});
+
+return result.toUIMessageStreamResponse({
+  onError: errorHandler,
 });
 ```
 
-</Note>
+In case you are using `createUIMessageResponse`, you can use the `onError` function when calling `toUIMessageResponse`:
 
-
-
-## Handling client disconnects
-
-By default, the AI SDK `streamText` function uses backpressure to the language model provider to prevent
-the consumption of tokens that are not yet requested.
-
-However, this means that when the client disconnects, e.g. by closing the browser tab or because of a network issue,
-the stream from the LLM will be aborted and the conversation may end up in a broken state.
-
-Assuming that you have a [storage solution](#storing-messages) in place, you can use the `consumeStream` method to consume the stream on the backend,
-and then save the result as usual.
-`consumeStream` effectively removes the backpressure,
-meaning that the result is stored even when the client has already disconnected.
-
-```tsx filename="app/api/chat/route.ts" highlight="19-21"
-import { convertToModelMessages, streamText, UIMessage } from 'ai';
-import { saveChat } from '@util/chat-store';
-
-export async function POST(req: Request) {
-  const { messages, chatId }: { messages: UIMessage[]; chatId: string } =
-    await req.json();
-
-  const result = streamText({
-    model,
-    messages: convertToModelMessages(messages),
-  });
-
-  // consume the stream to ensure it runs to completion & triggers onFinish
-  // even when the client response is aborted:
-  result.consumeStream(); // no await
-
-  return result.toUIMessageStreamResponse({
-    originalMessages: messages,
-    onFinish: ({ messages }) => {
-      saveChat({ chatId, messages });
-    },
-  });
-}
+```tsx
+const response = createUIMessageResponse({
+  // ...
+  async execute(dataStream) {
+    // ...
+  },
+  onError: error => `Custom error: ${error.message}`,
+});
 ```
-
-When the client reloads the page after a disconnect, the chat will be restored from the storage solution.
-
-<Note>
-  In production applications, you would also track the state of the request (in
-  progress, complete) in your stored messages and use it on the client to cover
-  the case where the client reloads the page after a disconnection, but the
-  streaming is not yet complete.
-</Note>
-
-For more robust handling of disconnects, you may want to add resumability on disconnects. Check out the [Chatbot Resume Streams](/docs/ai-sdk-ui/chatbot-resume-streams) documentation to learn more.
+</guide>
